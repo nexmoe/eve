@@ -27,11 +27,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory to store audio segments.",
     )
     parser.add_argument(
-        "--prefix",
-        default="eve",
-        help="Filename prefix for segments.",
-    )
-    parser.add_argument(
         "--total-hours",
         type=float,
         default=24.0,
@@ -127,7 +122,7 @@ def run_recording(args: argparse.Namespace) -> int:
     print("Starting recording... Press Ctrl+C to stop early.")
     recorder = LiveVadRecorder(
         output_dir=args.output_dir,
-        prefix=args.prefix,
+        prefix="eve",
         device=args.device,
         vad=SileroVAD(),
         transcriber=transcriber,
