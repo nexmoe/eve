@@ -1,0 +1,45 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+dist/
+build/
+editable_install/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Recordings & generated files
+recordings/
+*.m4a
+*.wav
+*.mp3
+
+# System & editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Testing & quality tools
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+logs/
