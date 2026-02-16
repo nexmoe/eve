@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "qwen-asr",
+  "rich",
   "silero-vad",
   "soundfile",
   "sounddevice",
@@ -13,6 +14,7 @@ dependencies = [
 
 [project.scripts]
 eve = "eve.record_eve_24h:main"
+eve-transcribe = "eve.transcribe_recordings:main"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
