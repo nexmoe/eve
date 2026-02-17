@@ -224,12 +224,26 @@ def _transcribe_file(
     logger = logging.getLogger(__name__)
     data = _load_json(json_path)
     data = _ensure_base_payload(data, audio_path, timestamp_prefix)
+    duration = _audio_duration_seconds(audio_path)
+
+    if duration is not None and duration <= 0:
+        logger.warning("Skipping empty audio %s (duration=%s)", audio_path, duration)
+        data["speech_segments"] = []
+        data["text"] = ""
+        data["language"] = None
+        data["status"] = "empty_audio"
+        data["model"] = transcriber.model_name
+        data["backend"] = transcriber.backend
+        data["asr_enabled"] = True
+        data["asr_mode"] = "offline"
+        data["transcribed_at"] = iso_now()
+        write_json_atomic(json_path, data)
+        return
 
     logger.info("Transcribing %s", audio_path)
     result = transcriber.transcribe(audio_path)
     text = (result.get("text") or "").strip()
     language = (result.get("language") or "").strip() or None
-    duration = _audio_duration_seconds(audio_path)
 
     segment: dict[str, object] = {
         "start_seconds": 0.0,
@@ -277,6 +291,18 @@ def _run_once(args: argparse.Namespace, transcriber: QwenASRTranscriber) -> int:
             _transcribe_file(transcriber, audio_path, json_path, timestamp_prefix)
         except Exception as exc:
             logger.exception("Failed to transcribe %s: %s", audio_path, exc)
+            data = _ensure_base_payload(_load_json(json_path), audio_path, timestamp_prefix)
+            data["speech_segments"] = []
+            data["text"] = ""
+            data["language"] = None
+            data["status"] = "error"
+            data["error"] = str(exc)
+            data["model"] = transcriber.model_name
+            data["backend"] = transcriber.backend
+            data["asr_enabled"] = True
+            data["asr_mode"] = "offline"
+            data["transcribed_at"] = iso_now()
+            write_json_atomic(json_path, data)
             continue
         count += 1
     return count
