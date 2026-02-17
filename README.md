@@ -2,7 +2,7 @@
 
 `eve` 全称为 `eavesdropper`。
 
-一个用于 macOS 的麦克风长时间录音工具：实时录音并自动转写，默认使用 Qwen3-ASR；VAD 仅保留有人说话的部分并只对说话段做转写。eve 面向需要“长时间、低打扰、可检索”录音的场景，提供持续录音、分段存储与实时转写，适用于会议记录、访谈纪要、学习复盘与个人日志等。
+一个跨平台的麦克风长时间录音工具：实时录音并自动转写，默认使用 Qwen3-ASR；VAD 仅保留有人说话的部分并只对说话段做转写。eve 面向需要“长时间、低打扰、可检索”录音的场景，提供持续录音、分段存储与实时转写，适用于会议记录、访谈纪要、学习复盘与个人日志等。
 
 ## 引言
 
@@ -89,7 +89,7 @@ eve --list-devices
 
 ```bash
 eve --device 2
-eve --device "MacBook Pro Microphone"
+eve --device "Built-in Microphone"
 ```
 
 默认已开启“有声麦克风自动切换”：
@@ -247,7 +247,7 @@ uv sync
   "created_at": "2026-02-01T04:05:18.132908+00:00",
   "device": null,
   "dtype": null,
-  "input_device": "2:MacBook Pro Microphone",
+  "input_device": "2:Built-in Microphone",
   "auto_switch_device": true,
   "asr_enabled": true,
   "asr_mode": "live",
