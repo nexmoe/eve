@@ -229,7 +229,7 @@ uv sync
 - 默认会按阈值和防抖策略在输入设备间自动切换，可用 `--no-auto-switch-device` 关闭。
 - 默认会忽略名称包含 `iphone`、`continuity` 的输入设备，避免 Continuity 麦克风断连导致频繁中断；可用 `--exclude-device-keywords` 自定义。
 - 默认会显示单行音量条（覆盖刷新，不刷屏）；可用 `--no-console-feedback` 关闭。
-- 启用 ASR 时，最新转写会以内联摘要显示在单行状态中，避免额外刷屏日志。
+- 启用 ASR 时，控制台会固定两行区域刷新：第一行显示录音状态，第二行单独显示最近转写历史（不刷屏）。
 - 运行中按 `Ctrl+C` 可提前停止；也可直接执行 `python -m eve` 代替 `eve`。
 
 ## 输出 JSON 结构（示例）

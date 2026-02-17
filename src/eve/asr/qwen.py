@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import warnings
 
 from ..utils.segment_utils import serialize_time_stamps
 
@@ -11,6 +12,16 @@ try:
 except Exception:
     class NoBackendError(Exception):
         pass
+
+
+# nagisa currently triggers Python 3.12 SyntaxWarning for regex escapes in its source.
+# Filter only that specific warning to keep startup logs clean.
+warnings.filterwarnings(
+    "ignore",
+    message=r".*invalid escape sequence '\\\(|.*invalid escape sequence '\\\)'.*",
+    category=SyntaxWarning,
+    module=r"nagisa\.tagger",
+)
 
 
 class QwenASRTranscriber:
