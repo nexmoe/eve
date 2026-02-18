@@ -125,7 +125,9 @@ class LiveVadRecorder:
         self._active_input_device_label = "default"
         self._last_asr_preview = ""
         self._last_asr_preview_time = 0.0
-        self._asr_history: deque[str] = deque(maxlen=self.config.console_asr_history_size)
+        self._asr_history: deque[tuple[str, str]] = deque(
+            maxlen=self.config.console_asr_history_size
+        )
         self._console_state_lock = threading.Lock()
         self._logger = logging.getLogger(__name__)
 
@@ -166,7 +168,11 @@ class LiveVadRecorder:
                     "language": (result.get("language") or "").strip() or None,
                     "text": text,
                 }
-                self._record_console_asr_output(text)
+                self._record_console_asr_output(
+                    text,
+                    start_iso=start_iso,
+                    end_iso=end_iso,
+                )
                 self._append_live_segment(payload, json_path=json_path)
             except Exception as exc:
                 self._logger.warning(
@@ -429,14 +435,30 @@ class LiveVadRecorder:
             width = 80
         return max(40, int(width))
 
-    def _record_console_asr_output(self, text: str) -> None:
+    def _format_console_asr_time(self, *, start_iso: str | None, end_iso: str | None) -> str:
+        ts = (end_iso or start_iso or "").strip()
+        if ts:
+            try:
+                return datetime.fromisoformat(ts).strftime("%H:%M:%S")
+            except ValueError:
+                pass
+        return datetime.now().strftime("%H:%M:%S")
+
+    def _record_console_asr_output(
+        self,
+        text: str,
+        *,
+        start_iso: str | None = None,
+        end_iso: str | None = None,
+    ) -> None:
         normalized = " ".join((text or "").split())
         if not normalized:
             return
+        timestamp = self._format_console_asr_time(start_iso=start_iso, end_iso=end_iso)
         with self._console_state_lock:
             self._last_asr_preview = normalized
             self._last_asr_preview_time = time.time()
-            self._asr_history.append(normalized)
+            self._asr_history.append((timestamp, normalized))
 
     def _get_console_asr_preview(self, now: float) -> str:
         if not self.config.console_asr_preview_enabled:
@@ -452,15 +474,17 @@ class LiveVadRecorder:
         max_chars = max(8, int(self.config.console_asr_preview_max_chars))
         return self._shorten(text, max_len=max_chars)
 
-    def _get_console_asr_history_preview(self) -> str:
+    def _get_console_asr_history_preview(self, max_lines: int = 3) -> list[str]:
         if not self.config.console_asr_preview_enabled:
-            return ""
+            return []
         with self._console_state_lock:
             if not self._asr_history:
-                return ""
+                return []
             history = list(self._asr_history)
-        # Keep a small rolling context in a fixed console area.
-        return " | ".join(history[-3:])
+        lines: list[str] = []
+        for ts, text in history[-max(1, int(max_lines)) :]:
+            lines.append(f"{ts} | {text}")
+        return lines
 
     def _format_elapsed(self) -> str:
         if self._stream_start_time is None:
@@ -511,24 +535,28 @@ class LiveVadRecorder:
         meter = self._build_level_meter(self._last_input_rms)
         db_text = f"{self._rms_to_db(self._last_input_rms):6.1f}dB"
         device = self._shorten(self._active_input_device_label, max_len=28)
-        asr_history = self._get_console_asr_history_preview()
+        asr_history_lines = self._get_console_asr_history_preview(max_lines=3)
         line_base = (
             f"REC {self._format_elapsed()} | {meter} {db_text} | {state} | "
             f"MIC {device} | AUTO {auto_state}"
         )
         width_limit = self._terminal_columns() - 1
         status_line = self._shorten_by_display_width(line_base, width_limit)
-        asr_line_prefix = "ASR | "
-        asr_remaining = max(8, width_limit - self._display_width(asr_line_prefix))
-        asr_line = asr_line_prefix + self._shorten_by_display_width(asr_history, asr_remaining)
+        asr_remaining = max(8, width_limit)
+        asr_lines: list[str] = []
+        for line in asr_history_lines:
+            asr_lines.append(self._shorten_by_display_width(line, asr_remaining))
+        while len(asr_lines) < 3:
+            asr_lines.append("")
         previous_count = max(0, int(self._console_status_length))
         if previous_count > 1:
             stream.write(f"\x1b[{previous_count - 1}A")
         stream.write("\r\x1b[2K" + status_line)
-        stream.write("\n\r\x1b[2K" + asr_line)
+        for line in asr_lines:
+            stream.write("\n\r\x1b[2K" + line)
         stream.flush()
         self._console_status_active = True
-        self._console_status_length = 2
+        self._console_status_length = 1 + len(asr_lines)
 
     def _mark_switch_candidate(self, device_index: int) -> bool:
         if self._switch_candidate == device_index:
