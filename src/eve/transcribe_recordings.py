@@ -23,18 +23,20 @@ except Exception as exc:  # pragma: no cover
         "soundfile is required for audio inspection. Install it with `pip install soundfile`."
     ) from exc
 
+SUPPORTED_AUDIO_EXTENSIONS = (".wav", ".flac")
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Transcribe existing WAV recordings and write/update JSON transcripts. "
+            "Transcribe existing audio recordings (WAV/FLAC) and write/update JSON transcripts. "
             "Useful for offline/asynchronous ASR after recording."
         )
     )
     parser.add_argument(
         "--input-dir",
         default="recordings",
-        help="Directory to scan for WAV recordings.",
+        help="Directory to scan for WAV/FLAC recordings.",
     )
     parser.add_argument(
         "--prefix",
@@ -135,7 +137,7 @@ def _iter_audio_files(input_dir: str):
     for root, dirs, files in os.walk(input_dir):
         dirs.sort()
         for name in sorted(files):
-            if name.lower().endswith(".wav"):
+            if name.lower().endswith(SUPPORTED_AUDIO_EXTENSIONS):
                 yield os.path.join(root, name)
 
 
