@@ -13,8 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-eve = "eve.record_eve_24h:main"
-eve-transcribe = "eve.transcribe_recordings:main"
+eve = "eve.cli:main"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

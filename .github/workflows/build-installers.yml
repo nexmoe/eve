@@ -1,0 +1,44 @@
+name: Build Installers
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install NSIS
+        if: runner.os == 'Windows'
+        run: choco install nsis -y
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Build installer
+        run: uv run --with pyinstaller scripts/build_installers.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eve-installer-${{ runner.os }}
+          path: dist/installers/*

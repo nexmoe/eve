@@ -6,7 +6,7 @@
 
 ## 引言
 
-> 好吧，数字化时代，我承认它离我们还比较遥远。在我能够真正的数字化飞升之前，我决定把我的声音完完整整地保留下来。所以，我开发了这个产品，帮我全天二十四小时不间断地监听我的声音。对，所以我有两个比较重点的东西：一个是会一直保存我的录音，另一个是提供数字转写的能力。可能现在的 AI 模型还不够强大，那些能力也没有那么强，所以先留着录音，等以后有升级的识别或更强的语音识别模型再处理。现在也支持关闭 ASR，先录音后用 `eve-transcribe` 异步处理历史音频。
+> 好吧，数字化时代，我承认它离我们还比较遥远。在我能够真正的数字化飞升之前，我决定把我的声音完完整整地保留下来。所以，我开发了这个产品，帮我全天二十四小时不间断地监听我的声音。对，所以我有两个比较重点的东西：一个是会一直保存我的录音，另一个是提供数字转写的能力。可能现在的 AI 模型还不够强大，那些能力也没有那么强，所以先留着录音，等以后有升级的识别或更强的语音识别模型再处理。现在也支持关闭 ASR，先录音后用 `eve transcribe` 异步处理历史音频。
 
 ## 功能特性
 
@@ -67,6 +67,40 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 uv sync
 eve
 ```
+
+## 打包跨平台安装包
+
+> 说明：安装包需要在目标系统原生构建，不能在单一系统直接交叉产出全部格式。  
+> 已提供 CI 矩阵工作流，一次触发可并行构建 macOS / Linux / Windows 安装包。
+
+### 本地构建（当前系统）
+
+```bash
+uv run --with pyinstaller scripts/build_installers.py
+```
+
+默认输出目录：`dist/installers/`
+
+安装包仅包含一个核心二进制 `eve`，可通过子命令 `eve transcribe` 执行异步转写，避免重复打包两份运行时。
+
+- macOS: `eve-<version>-macos-<arch>.pkg`
+- Linux: `eve_<version>_<arch>.deb`
+- Windows: `eve-<version>-windows-<arch>-setup.exe`
+
+本地前置工具：
+
+- macOS: `pkgbuild`（系统自带）
+- Linux: `dpkg-deb`
+- Windows: `makensis`（可用 `choco install nsis -y`）
+
+### CI 一次性构建三端安装包
+
+仓库已新增工作流：`.github/workflows/build-installers.yml`
+
+- 手动触发：GitHub Actions `workflow_dispatch`
+- 自动触发：推送 `v*` tag（如 `v0.2.1`）
+
+工作流会在三个系统各自产出安装包并上传到 Actions Artifacts。
 
 ### 3) 默认行为
 
@@ -133,13 +167,13 @@ eve --disable-asr
 ### 异步转写已有录音
 
 ```bash
-eve-transcribe --input-dir recordings
+eve transcribe --input-dir recordings
 ```
 
 持续监听新文件并转写：
 
 ```bash
-eve-transcribe --input-dir recordings --watch
+eve transcribe --input-dir recordings --watch
 ```
 
 ### 调整音频参数
@@ -215,13 +249,13 @@ eve-transcribe --input-dir recordings --watch
 
 ## ASR 依赖
 
-ASR 转写为可选功能，依赖已包含在默认安装中。仅在实时转写或使用 `eve-transcribe` 时需要：
+ASR 转写为可选功能，依赖已包含在默认安装中。仅在实时转写或使用 `eve transcribe` 时需要：
 
 ```bash
 uv sync
 ```
 
-关闭 ASR 时仅录音，不会加载模型；后续可用 `eve-transcribe` 异步生成 `.json` 转写结果。
+关闭 ASR 时仅录音，不会加载模型；后续可用 `eve transcribe` 异步生成 `.json` 转写结果。
 
 ## 其他说明
 
