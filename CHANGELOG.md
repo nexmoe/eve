@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.3.1 - 2026-02-21
+
+### Documentation
+- Make README default to English with separate Chinese translation.
+
 ## 0.3.0 - 2026-02-21
 
 ### Features
