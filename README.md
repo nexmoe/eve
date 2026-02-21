@@ -1,65 +1,81 @@
 # eve
 
-`eve` 全称为 `eavesdropper`。
+English | [中文](README.zh.md)
 
-一个跨平台的麦克风长时间录音工具：实时录音并自动转写，默认使用 Qwen3-ASR；VAD 仅保留有人说话的部分并只对说话段做转写。eve 面向需要“长时间、低打扰、可检索”录音的场景，提供持续录音、分段存储与实时转写，适用于会议记录、访谈纪要、学习复盘与个人日志等。
+`eve` stands for `eavesdropper`.
 
-## 引言
+A cross-platform long-running microphone recorder with real-time transcription. It uses Qwen3-ASR by default. VAD keeps only speech segments and transcribes speech-only chunks. `eve` is designed for long-duration, low-friction, searchable recording workflows, such as meetings, interviews, study reviews, and personal voice logs.
 
-> 好吧，数字化时代，我承认它离我们还比较遥远。在我能够真正的数字化飞升之前，我决定把我的声音完完整整地保留下来。所以，我开发了这个产品，帮我全天二十四小时不间断地监听我的声音。对，所以我有两个比较重点的东西：一个是会一直保存我的录音，另一个是提供数字转写的能力。可能现在的 AI 模型还不够强大，那些能力也没有那么强，所以先留着录音，等以后有升级的识别或更强的语音识别模型再处理。现在也支持关闭 ASR，先录音后用 `eve transcribe` 异步处理历史音频。
+## Intro
 
-## 功能特性
+Before fully digitalizing my memory, I want to preserve my voice data continuously. So this tool focuses on two things: persistent recording and transcription. If current AI is not good enough for your needs, you can keep recordings first and re-transcribe later with stronger models. You can also disable ASR and process historical audio asynchronously via `eve transcribe`.
 
-- 长时间连续录音：面向全天或多小时录制场景。
-- 自动分段存储：按时间切片生成 FLAC（无损压缩）文件，便于管理与回放。
-- 实时转写：录音过程中持续输出转写文本（JSON）。
-- VAD 语音检测：仅保留有人说话的片段，减少无效内容。
-- 麦克风自动切换：可自动探测并切到当前“有声”的输入设备。
-- 轻量控制台反馈：单行音量条与状态提示，便于确认正在正常录音。
-- 日志式归档：录音与转写按日期归档，便于检索与复盘。
-- ASR 可关闭：支持离线/异步转写已有录音。
+## Features
 
-## OneDrive 云端同步（常见用法）
+- Long-running continuous recording for all-day or multi-hour sessions.
+- Automatic segmenting into FLAC files for easier management and playback.
+- Real-time transcription to JSON during recording.
+- VAD-based speech detection to skip silence and reduce noise.
+- Automatic microphone switching to the currently active input source.
+- Lightweight console feedback with single-line level/status output.
+- Date-based archival for both audio and transcription files.
+- Optional ASR disable mode for recording-only workflows.
 
-将输出目录设为 OneDrive 的本地下载目录后，录音 `.flac`（或你指定的 `.wav`）和同名转写 `.json`
-会一起写入该目录（按日期归档），并由 OneDrive 自动同步到云端。
+## OneDrive Sync (Common Workflow)
+
+Set the output directory to your local OneDrive folder. Audio (`.flac` or `.wav`) and matching transcription files (`.json`) will be written there (grouped by date) and then synced to cloud automatically.
 
 ```bash
 uv run eve --output-dir /Users/air15/Library/CloudStorage/OneDrive-Personal/recordings/
 ```
 
-![OneDrive 输出目录示例](docs/images/onedrive-output-dir-example.png)
+![OneDrive output directory example](docs/images/onedrive-output-dir-example.png)
 
-也可以把该目录中的转写内容交给其他 AI 生成日报（如 `transcript-summary.md`）：
+You can also pass the daily transcription files to another AI to generate a daily report (for example `transcript-summary.md`):
 
 ```text
-请读取 /Users/<你的用户名>/Library/CloudStorage/OneDrive-Personal/recordings/YYYYMMDD/ 下的转写 JSON，
-按时间线整理“今日纪实、重点提炼、待办事项”，输出为 Markdown 文件 transcript-summary.md。
+Read transcription JSON files under
+/Users/<your-username>/Library/CloudStorage/OneDrive-Personal/recordings/YYYYMMDD/,
+and generate a timeline summary with key highlights and todos as transcript-summary.md.
 ```
 
-![AI 日报示例](docs/images/ai-daily-report-example.jpeg)
+![AI daily report example](docs/images/ai-daily-report-example.jpeg)
 
-## 快速上手
+## Quick Start
 
-### 1) 环境要求
+### 1) Requirements
 
 - Python >= 3.12
-- [uv](https://docs.astral.sh/uv/)（推荐，用于依赖与运行）
+- [uv](https://docs.astral.sh/uv/) (recommended for dependency and runtime management)
 
 ```bash
 brew install uv
 ```
 
-### 2) 安装与运行
+### 2) Install and Run
 
-在项目根目录执行：
+From project root:
 
 ```bash
 uv sync
 uv run eve
 ```
 
-若已创建并激活虚拟环境，也可：
+### Configuration Requirements
+
+Before first run, confirm the following:
+
+- Output directory is writable: default path is `recordings/YYYYMMDD/`; use `--output-dir` to customize.
+- Microphone permission is granted: on macOS, allow your terminal/app in `System Settings -> Privacy & Security -> Microphone`.
+- ASR model is available: default is `Qwen/Qwen3-ASR-0.6B`; first load needs network download. For offline usage, pre-cache the model or set a local path with `--asr-model /path/to/model`.
+- Inference device is available: default `--asr-device` is `auto`, which falls back to CPU when GPU/NPU is unavailable.
+- Resource guidance (empirical):
+  - Recording only (`--disable-asr`): suggested memory `2GB+`, dual-core CPU is enough.
+  - Recording + real-time ASR (CPU): suggested memory `8GB+` (minimum `4GB`), recommended 4+ CPU cores.
+  - Recording + real-time ASR (GPU/NPU): suggested memory `8GB+`; significantly lowers CPU usage and improves real-time stability.
+  - Disk space: highly dependent on duration; reserve at least `10GB` for long-running archives and JSON outputs.
+
+If you already have an activated virtual environment:
 
 ```bash
 uv venv .venv
@@ -68,71 +84,71 @@ uv sync
 eve
 ```
 
-## 打包跨平台安装包
+## Build Cross-Platform Installers
 
-> 说明：安装包需要在目标系统原生构建，不能在单一系统直接交叉产出全部格式。  
-> 已提供 CI 矩阵工作流，一次触发可并行构建 macOS / Linux / Windows 安装包。
+> Note: installers must be built natively on each target OS. One OS cannot directly cross-build all formats.
+> A CI matrix workflow is included to build macOS / Linux / Windows installers in one trigger.
 
-### 本地构建（当前系统）
+### Local build (current OS)
 
 ```bash
 uv run --with pyinstaller scripts/build_installers.py
 ```
 
-默认输出目录：`dist/installers/`
+Default output directory: `dist/installers/`
 
-安装包仅包含一个核心二进制 `eve`，可通过子命令 `eve transcribe` 执行异步转写，避免重复打包两份运行时。
+Installers contain one core binary `eve`. Offline transcription is available through `eve transcribe`, so there is no duplicate runtime packaging.
 
 - macOS: `eve-<version>-macos-<arch>.pkg`
 - Linux: `eve_<version>_<arch>.deb`
 - Windows: `eve-<version>-windows-<arch>-setup.exe`
 
-本地前置工具：
+Local prerequisites:
 
-- macOS: `pkgbuild`（系统自带）
+- macOS: `pkgbuild` (built-in)
 - Linux: `dpkg-deb`
-- Windows: `makensis`（可用 `choco install nsis -y`）
+- Windows: `makensis` (install via `choco install nsis -y`)
 
-### CI 一次性构建三端安装包
+### CI build for all 3 platforms
 
-仓库已新增工作流：`.github/workflows/build-installers.yml`
+Workflow file: `.github/workflows/build-installers.yml`
 
-- 手动触发：GitHub Actions `workflow_dispatch`
-- 自动触发：推送 `v*` tag（如 `v0.2.1`）
+- Manual trigger: GitHub Actions `workflow_dispatch`
+- Automatic trigger: push a `v*` tag (for example `v0.2.1`)
 
-工作流会在三个系统各自产出安装包并上传到 Actions Artifacts。
+Artifacts for each OS are uploaded to GitHub Actions Artifacts.
 
-### 3) 默认行为
+### 3) Default Behavior
 
-- 总时长 24 小时，每 60 分钟切一段
-- 录音与 JSON 按日期归档到 `recordings/YYYYMMDD/`
-- 文件名形如 `eve_live_YYYYMMDD_HHMMSS.flac`
-- 同名 `.json`（如 `eve_live_YYYYMMDD_HHMMSS.json`）实时追加转写结果
-- 使用 Silero VAD，仅保留有人说话的片段并只对说话段做转写
-- 默认开启 ASR，可通过 `--disable-asr` 仅录音
+- Total duration: 24 hours; each segment: 60 minutes
+- Audio and JSON are archived under `recordings/YYYYMMDD/`
+- File name pattern: `eve_live_YYYYMMDD_HHMMSS.flac`
+- Matching `.json` (for example `eve_live_YYYYMMDD_HHMMSS.json`) is updated continuously
+- Uses Silero VAD and only transcribes speech chunks
+- ASR is enabled by default; disable with `--disable-asr`
 
-## 常用用法
+## Common Usage
 
-### 列出音频设备
+### List audio devices
 
 ```bash
 eve --list-devices
 ```
 
-用 `--device` 选择麦克风（默认 `default`），支持设备索引、设备名或 `:索引`：
+Use `--device` to select microphone (default is `default`). Supports device index, device name, or `:index`:
 
 ```bash
 eve --device 2
 eve --device "Built-in Microphone"
 ```
 
-默认已开启“有声麦克风自动切换”：
+Auto switch to active microphone is enabled by default:
 
 ```bash
 eve
 ```
 
-需要更严格防抖时可调高确认次数和切换冷却时间：
+For stricter debounce behavior, increase confirmation count and cooldown:
 
 ```bash
 eve \
@@ -140,136 +156,136 @@ eve \
   --auto-switch-cooldown-seconds 12
 ```
 
-如需关闭自动切麦：
+Disable automatic mic switching:
 
 ```bash
 eve --no-auto-switch-device
 ```
 
-如果不希望显示实时音量条：
+Disable real-time console volume feedback:
 
 ```bash
 eve --no-console-feedback
 ```
 
-### 自定义输出与分段
+### Customize output and segment length
 
 ```bash
 eve --output-dir recordings --segment-minutes 30 --total-hours 3
 ```
 
-### 录音但不转写（关闭 ASR）
+### Record without transcription (disable ASR)
 
 ```bash
 eve --disable-asr
 ```
 
-### 异步转写已有录音
+### Asynchronously transcribe existing recordings
 
 ```bash
 eve transcribe --input-dir recordings
 ```
 
-持续监听新文件并转写：
+Watch continuously for new files and transcribe:
 
 ```bash
 eve transcribe --input-dir recordings --watch
 ```
 
-### 调整音频参数
+### Adjust audio format
 
-默认音频参数为：FLAC（无损压缩）/ 16kHz / 单声道。可用 `--audio-format wav` 切回 WAV。
+Default audio settings: FLAC (lossless) / 16kHz / mono. Use `--audio-format wav` to switch back to WAV.
 
-## 配置参数一览
+## Configuration Parameters
 
-下表按类别列出所有配置参数及默认值，便于快速查阅。
+The tables below list all configuration parameters by category with default values.
 
-### 设备与输出
+### Device and Output
 
-| 参数 | 说明 | 默认值 |
+| Parameter | Description | Default |
 | --- | --- | --- |
-| `--device` | 麦克风设备（索引 / 名称 / `:索引`） | `default` |
-| `--output-dir` | 录音输出目录 | `recordings` |
-| `--audio-format` | 归档音频格式（`flac` 无损压缩 / `wav` 未压缩） | `flac` |
-| `--device-check-seconds` | 麦克风可用性检测间隔（秒，<=0 关闭） | `2` |
-| `--device-retry-seconds` | 麦克风异常后重试间隔（秒） | `2` |
-| `--auto-switch-device` / `--no-auto-switch-device` | 自动切换到当前有声输入设备 | `true` |
-| `--auto-switch-scan-seconds` | 自动切换扫描间隔（秒） | `3` |
-| `--auto-switch-probe-seconds` | 每个候选设备的探测时长（秒） | `0.25` |
-| `--auto-switch-max-candidates-per-scan` | 每次扫描最多探测的候选麦克风数量 | `2` |
-| `--exclude-device-keywords` | 录音默认选设备与自动切换时要忽略的设备名关键词（逗号分隔） | `iphone,continuity` |
-| `--auto-switch-min-rms` | 候选麦克风被判定为“有声”的最小 RMS | `0.006` |
-| `--auto-switch-min-ratio` | 候选设备相对当前设备的最小音量倍率 | `1.8` |
-| `--auto-switch-cooldown-seconds` | 两次切换间的最短冷却时间（秒） | `8` |
-| `--auto-switch-confirmations` | 同一候选设备连续胜出的次数阈值 | `2` |
-| `--console-feedback` / `--no-console-feedback` | 开关控制台单行录音反馈 | `true` |
-| `--console-feedback-hz` | 控制台反馈刷新频率（Hz） | `12` |
+| `--device` | Microphone device (index / name / `:index`) | `default` |
+| `--output-dir` | Output directory for recordings | `recordings` |
+| `--audio-format` | Archive format (`flac` lossless / `wav` uncompressed) | `flac` |
+| `--device-check-seconds` | Device availability check interval (seconds, <=0 to disable) | `2` |
+| `--device-retry-seconds` | Retry interval after mic error (seconds) | `2` |
+| `--auto-switch-device` / `--no-auto-switch-device` | Auto-switch to currently active input device | `true` |
+| `--auto-switch-scan-seconds` | Auto-switch scan interval (seconds) | `3` |
+| `--auto-switch-probe-seconds` | Probe duration per candidate device (seconds) | `0.25` |
+| `--auto-switch-max-candidates-per-scan` | Max candidates to probe per scan | `2` |
+| `--exclude-device-keywords` | Device-name keywords to ignore when selecting/switching (comma-separated) | `iphone,continuity` |
+| `--auto-switch-min-rms` | Minimum RMS to treat a candidate as active | `0.006` |
+| `--auto-switch-min-ratio` | Minimum volume ratio vs current device | `1.8` |
+| `--auto-switch-cooldown-seconds` | Cooldown between switches (seconds) | `8` |
+| `--auto-switch-confirmations` | Consecutive wins needed before switching | `2` |
+| `--console-feedback` / `--no-console-feedback` | Toggle single-line console recording feedback | `true` |
+| `--console-feedback-hz` | Console feedback refresh frequency (Hz) | `12` |
 
-### 录音时长与分段
+### Recording Duration and Segments
 
-| 参数 | 说明 | 默认值 |
+| Parameter | Description | Default |
 | --- | --- | --- |
-| `--total-hours` | 总录音时长（小时） | `24` |
-| `--segment-minutes` | 分段时长（分钟） | `60` |
+| `--total-hours` | Total recording duration (hours) | `24` |
+| `--segment-minutes` | Segment length (minutes) | `60` |
 
-### 音频格式
+### Audio Format
 
-默认：FLAC（无损压缩）、16kHz、单声道。可通过 `--audio-format wav` 改为 WAV。
+Default: FLAC (lossless), 16kHz, mono. Use `--audio-format wav` to switch to WAV.
 
 ### VAD
 
-使用 Silero VAD 过滤无声片段，仅对“有人说话”的部分做转写。
-输出 JSON 中包含每段说话的系统时间戳和对应转写文本。
+Silero VAD is used to filter silence and only transcribe speech segments.
+JSON output includes timestamp and transcription for each detected speech segment.
 
-为保证“边说边转写”，单段说话连续时长默认会在 20 秒处强制切段。
+To keep transcription near real-time, one continuous speech segment is force-split at 20 seconds by default.
 
-### 工具
+### Tools
 
-| 参数 | 说明 | 默认值 |
+| Parameter | Description | Default |
 | --- | --- | --- |
-| `--list-devices` | 列出可用设备并退出 | `false` |
+| `--list-devices` | List available devices and exit | `false` |
 
-### ASR 模型与设备
+### ASR Model and Device
 
-| 参数 | 说明 | 默认值 |
+| Parameter | Description | Default |
 | --- | --- | --- |
-| `--disable-asr` | 关闭实时转写，仅录音 | `false` |
-| `--asr-model` | Qwen3-ASR 模型 ID 或本地路径 | `Qwen/Qwen3-ASR-0.6B` |
-| `--asr-language` | 语言名称或 `auto` 自动检测 | `auto` |
-| `--asr-device` | 推理设备（auto / cuda:0 / mps / cpu） | `auto` |
-| `--asr-dtype` | 计算精度（auto / float16 / bfloat16 / float32） | `auto` |
+| `--disable-asr` | Disable real-time ASR, record audio only | `false` |
+| `--asr-model` | Qwen3-ASR model ID or local path | `Qwen/Qwen3-ASR-0.6B` |
+| `--asr-language` | Language name or `auto` | `auto` |
+| `--asr-device` | Inference device (`auto` / `cuda:0` / `mps` / `cpu`) | `auto` |
+| `--asr-dtype` | Compute dtype (`auto` / `float16` / `bfloat16` / `float32`) | `auto` |
 
-### ASR 推理
+### ASR Inference
 
-| 参数 | 说明 | 默认值 |
+| Parameter | Description | Default |
 | --- | --- | --- |
-| `--asr-max-new-tokens` | 解码最大新 token 数 | `256` |
-| `--asr-max-batch-size` | 推理批大小 | `1` |
-| `--asr-preload` | 录音前预加载模型 | `false` |
+| `--asr-max-new-tokens` | Max new decoding tokens | `256` |
+| `--asr-max-batch-size` | Inference batch size | `1` |
+| `--asr-preload` | Preload ASR model before recording starts | `false` |
 
-## ASR 依赖
+## ASR Dependencies
 
-ASR 转写为可选功能，依赖已包含在默认安装中。仅在实时转写或使用 `eve transcribe` 时需要：
+ASR transcription is optional. Dependencies are included in default install and only needed for real-time transcription or `eve transcribe`:
 
 ```bash
 uv sync
 ```
 
-关闭 ASR 时仅录音，不会加载模型；后续可用 `eve transcribe` 异步生成 `.json` 转写结果。
+When ASR is disabled, no model is loaded and only audio is recorded. You can later generate `.json` with `eve transcribe`.
 
-## 其他说明
+## Notes
 
-- 录音基于 `sounddevice`，设备列表以 `eve --list-devices` 输出为准。
-- 运行中若麦克风不可用，会按 `--device-retry-seconds` 间隔自动重试。
-- 默认会按阈值和防抖策略在输入设备间自动切换，可用 `--no-auto-switch-device` 关闭。
-- 默认会忽略名称包含 `iphone`、`continuity` 的输入设备，避免 Continuity 麦克风断连导致频繁中断；可用 `--exclude-device-keywords` 自定义。
-- 默认会显示单行音量条（覆盖刷新，不刷屏）；可用 `--no-console-feedback` 关闭。
-- 启用 ASR 时，控制台会固定两行区域刷新：第一行显示录音状态，第二行单独显示最近转写历史（不刷屏）。
-- 运行中按 `Ctrl+C` 可提前停止；也可直接执行 `python -m eve` 代替 `eve`。
+- Recording relies on `sounddevice`; device list is based on `eve --list-devices`.
+- If mic becomes unavailable at runtime, retry is automatic based on `--device-retry-seconds`.
+- Device auto-switch uses threshold + debounce strategy and can be disabled with `--no-auto-switch-device`.
+- By default, input devices containing `iphone` or `continuity` are ignored to avoid frequent interruptions from Continuity Mic disconnects; customize via `--exclude-device-keywords`.
+- Single-line volume feedback is enabled by default (in-place refresh, no log flooding); disable with `--no-console-feedback`.
+- With ASR enabled, the console keeps two fixed lines: line 1 for recording status, line 2 for recent transcription history.
+- Press `Ctrl+C` to stop early. You can also run `python -m eve` instead of `eve`.
 
-## 输出 JSON 结构（示例）
+## Output JSON Structure (Example)
 
-每个音频段对应一个同名 JSON，录音与转写过程中会持续追加 `speech_segments` 并更新 `text`、`language`、`status`：
+Each audio segment has a same-name JSON file. During recording/transcription, `speech_segments` is appended continuously and `text`, `language`, and `status` are updated.
 
 ```json
 {
@@ -292,17 +308,17 @@ uv sync
       "start_time_iso": "2026-02-01T12:05:14.200000+08:00",
       "end_time_iso": "2026-02-01T12:05:16.700000+08:00",
       "language": "Chinese",
-      "text": "不宜长时间久坐，请升起升降桌。"
+      "text": "Avoid sitting too long; please raise the standing desk."
     }
   ],
   "language": "Chinese",
-  "text": "不宜长时间久坐，请升起升降桌。"
+  "text": "Avoid sitting too long; please raise the standing desk."
 }
 ```
 
-- `device`、`dtype` 为 ASR 实际使用的设备与精度，未加载模型前可为 `null`。
-- `input_device` 为该段录音实际使用的输入设备（索引:设备名）。
-- `auto_switch_device` 表示该段录音是否启用了自动切麦。
-- `asr_mode` 为 `"live"`（实时转写）、`"disabled"`（仅录音）或 `"offline"`（离线转写）。
-- `status` 录音中为 `"recording"`，结束后可能为 `"ok"`、`"pending_asr"`、`"no_speech"` 或 `"no_text"`。
-- 离线转写会输出 `start_seconds` / `end_seconds`（相对音频文件），不会包含实时录音的绝对时间戳。
+- `device` and `dtype` are the actual ASR device/precision; they may be `null` before model load.
+- `input_device` is the actual input device used for this segment (`index:name`).
+- `auto_switch_device` indicates whether auto-switch was enabled for this segment.
+- `asr_mode` is one of `"live"` (real-time), `"disabled"` (record-only), or `"offline"` (offline transcription).
+- During recording, `status` is `"recording"`; after completion it may be `"ok"`, `"pending_asr"`, `"no_speech"`, or `"no_text"`.
+- Offline transcription outputs `start_seconds` / `end_seconds` (relative to audio), not the absolute timestamps used in live recording.
