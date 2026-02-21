@@ -71,7 +71,7 @@ def make_executable(path: Path) -> None:
     path.chmod(current | 0o755)
 
 
-def build_binary(temp_dir: Path) -> Path:
+def build_binary(temp_dir: Path) -> tuple[Path, Path]:
     dist_dir = temp_dir / "dist"
     work_dir = temp_dir / "build"
     spec_dir = temp_dir / "spec"
@@ -86,7 +86,7 @@ def build_binary(temp_dir: Path) -> Path:
             "PyInstaller",
             "--noconfirm",
             "--clean",
-            "--onefile",
+            "--onedir",
             "--name",
             "eve",
             "--distpath",
@@ -99,11 +99,12 @@ def build_binary(temp_dir: Path) -> Path:
         ]
     )
 
+    app_dir = dist_dir / "eve"
     suffix = ".exe" if sys.platform == "win32" else ""
-    eve_binary = dist_dir / f"eve{suffix}"
+    eve_binary = app_dir / f"eve{suffix}"
     if not eve_binary.exists():
         raise RuntimeError("PyInstaller build did not produce the expected eve binary.")
-    return eve_binary
+    return eve_binary, app_dir
 
 
 def copy_binary(binary_path: Path, target_path: Path) -> None:
@@ -111,13 +112,36 @@ def copy_binary(binary_path: Path, target_path: Path) -> None:
     shutil.copy2(binary_path, target_path)
     make_executable(target_path)
 
-def build_macos_pkg(version: str, arch: str, eve_binary: Path, output_dir: Path, temp_dir: Path) -> Path:
+def copy_bundle(source_dir: Path, target_dir: Path) -> None:
+    if target_dir.exists():
+        shutil.rmtree(target_dir)
+    shutil.copytree(source_dir, target_dir)
+
+
+def write_unix_launcher(path: Path, target_binary: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "\n".join(
+            [
+                "#!/bin/sh",
+                f'exec "{target_binary}" "$@"',
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    make_executable(path)
+
+
+def build_macos_pkg(version: str, arch: str, eve_app_dir: Path, output_dir: Path, temp_dir: Path) -> Path:
     if shutil.which("pkgbuild") is None:
         raise RuntimeError("pkgbuild is required on macOS to create a .pkg installer.")
 
     pkg_root = temp_dir / "pkgroot"
     install_bin_dir = pkg_root / "usr" / "local" / "bin"
-    copy_binary(eve_binary, install_bin_dir / "eve")
+    install_lib_dir = pkg_root / "usr" / "local" / "lib" / "eve"
+    copy_bundle(eve_app_dir, install_lib_dir)
+    write_unix_launcher(install_bin_dir / "eve", "/usr/local/lib/eve/eve")
     run(["xattr", "-cr", str(pkg_root)])
     for metadata_file in pkg_root.rglob("._*"):
         metadata_file.unlink(missing_ok=True)
@@ -140,7 +164,7 @@ def build_macos_pkg(version: str, arch: str, eve_binary: Path, output_dir: Path,
     return output_path
 
 
-def build_linux_deb(version: str, eve_binary: Path, output_dir: Path, temp_dir: Path) -> Path:
+def build_linux_deb(version: str, eve_app_dir: Path, output_dir: Path, temp_dir: Path) -> Path:
     if shutil.which("dpkg-deb") is None:
         raise RuntimeError("dpkg-deb is required on Linux to create a .deb installer.")
 
@@ -148,8 +172,10 @@ def build_linux_deb(version: str, eve_binary: Path, output_dir: Path, temp_dir: 
     deb_root = temp_dir / "debroot"
     control_dir = deb_root / "DEBIAN"
     install_bin_dir = deb_root / "usr" / "local" / "bin"
+    install_lib_dir = deb_root / "usr" / "local" / "lib" / "eve"
     control_dir.mkdir(parents=True, exist_ok=True)
-    copy_binary(eve_binary, install_bin_dir / "eve")
+    copy_bundle(eve_app_dir, install_lib_dir)
+    write_unix_launcher(install_bin_dir / "eve", "/usr/local/lib/eve/eve")
 
     control_content = "\n".join(
         [
@@ -186,21 +212,22 @@ RequestExecutionLevel admin
 
 Section "Install"
   SetOutPath "$INSTDIR"
-  File "app\\eve.exe"
+  File /r "app\\*.*"
   File /oname=README.md "README.md"
   WriteUninstaller "$INSTDIR\\Uninstall.exe"
 SectionEnd
 
 Section "Uninstall"
-  Delete "$INSTDIR\\eve.exe"
+  RMDir /r "$INSTDIR\\_internal"
   Delete "$INSTDIR\\README.md"
   Delete "$INSTDIR\\Uninstall.exe"
-  RMDir "$INSTDIR"
+  Delete "$INSTDIR\\eve.exe"
+  RMDir /r "$INSTDIR"
 SectionEnd
 """
 
 
-def build_windows_installer(version: str, arch: str, eve_binary: Path, output_dir: Path, temp_dir: Path) -> Path:
+def build_windows_installer(version: str, arch: str, eve_app_dir: Path, output_dir: Path, temp_dir: Path) -> Path:
     makensis = shutil.which("makensis")
     if makensis is None and sys.platform == "win32":
         default_makensis = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "NSIS" / "makensis.exe"
@@ -214,8 +241,7 @@ def build_windows_installer(version: str, arch: str, eve_binary: Path, output_di
 
     nsis_root = temp_dir / "nsis"
     app_dir = nsis_root / "app"
-    app_dir.mkdir(parents=True, exist_ok=True)
-    copy_binary(eve_binary, app_dir / "eve.exe")
+    copy_bundle(eve_app_dir, app_dir)
     shutil.copy2(ROOT / "README.md", nsis_root / "README.md")
 
     output_name = f"eve-{version}-windows-{arch}-setup.exe"
@@ -253,20 +279,20 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory(prefix="eve-installer-") as temp_path:
         temp_dir = Path(temp_path)
-        eve_binary = build_binary(temp_dir=temp_dir)
+        _, eve_app_dir = build_binary(temp_dir=temp_dir)
 
         if target == "macos":
             installer = build_macos_pkg(
                 version=version,
                 arch=arch,
-                eve_binary=eve_binary,
+                eve_app_dir=eve_app_dir,
                 output_dir=output_dir,
                 temp_dir=temp_dir,
             )
         elif target == "linux":
             installer = build_linux_deb(
                 version=version,
-                eve_binary=eve_binary,
+                eve_app_dir=eve_app_dir,
                 output_dir=output_dir,
                 temp_dir=temp_dir,
             )
@@ -274,7 +300,7 @@ def main() -> int:
             installer = build_windows_installer(
                 version=version,
                 arch=arch,
-                eve_binary=eve_binary,
+                eve_app_dir=eve_app_dir,
                 output_dir=output_dir,
                 temp_dir=temp_dir,
             )
