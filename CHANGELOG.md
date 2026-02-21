@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.3.0 - 2026-02-21
+
+### Features
+- Add cross-platform installer workflow for macOS, Linux, and Windows.
+- Unify CLI into a single `eve` entrypoint and support `eve transcribe`.
+
+### Documentation
+- Add installer build and CI workflow usage in README.
+- Update command examples from `eve-transcribe` to `eve transcribe`.
+
 ## 0.2.0 - 2026-02-20
 
 ### Features
