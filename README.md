@@ -11,7 +11,7 @@
 ## 功能特性
 
 - 长时间连续录音：面向全天或多小时录制场景。
-- 自动分段存储：按时间切片生成 WAV 文件，便于管理与回放。
+- 自动分段存储：按时间切片生成 FLAC（无损压缩）文件，便于管理与回放。
 - 实时转写：录音过程中持续输出转写文本（JSON）。
 - VAD 语音检测：仅保留有人说话的片段，减少无效内容。
 - 麦克风自动切换：可自动探测并切到当前“有声”的输入设备。
@@ -21,7 +21,7 @@
 
 ## OneDrive 云端同步（常见用法）
 
-将输出目录设为 OneDrive 的本地下载目录后，录音 `.wav` 和同名转写 `.json`
+将输出目录设为 OneDrive 的本地下载目录后，录音 `.flac`（或你指定的 `.wav`）和同名转写 `.json`
 会一起写入该目录（按日期归档），并由 OneDrive 自动同步到云端。
 
 ```bash
@@ -72,7 +72,7 @@ eve
 
 - 总时长 24 小时，每 60 分钟切一段
 - 录音与 JSON 按日期归档到 `recordings/YYYYMMDD/`
-- 文件名形如 `eve_live_YYYYMMDD_HHMMSS.wav`
+- 文件名形如 `eve_live_YYYYMMDD_HHMMSS.flac`
 - 同名 `.json`（如 `eve_live_YYYYMMDD_HHMMSS.json`）实时追加转写结果
 - 使用 Silero VAD，仅保留有人说话的片段并只对说话段做转写
 - 默认开启 ASR，可通过 `--disable-asr` 仅录音
@@ -144,7 +144,7 @@ eve-transcribe --input-dir recordings --watch
 
 ### 调整音频参数
 
-音频参数已固定为：WAV / 16kHz / 单声道。
+默认音频参数为：FLAC（无损压缩）/ 16kHz / 单声道。可用 `--audio-format wav` 切回 WAV。
 
 ## 配置参数一览
 
@@ -156,6 +156,7 @@ eve-transcribe --input-dir recordings --watch
 | --- | --- | --- |
 | `--device` | 麦克风设备（索引 / 名称 / `:索引`） | `default` |
 | `--output-dir` | 录音输出目录 | `recordings` |
+| `--audio-format` | 归档音频格式（`flac` 无损压缩 / `wav` 未压缩） | `flac` |
 | `--device-check-seconds` | 麦克风可用性检测间隔（秒，<=0 关闭） | `2` |
 | `--device-retry-seconds` | 麦克风异常后重试间隔（秒） | `2` |
 | `--auto-switch-device` / `--no-auto-switch-device` | 自动切换到当前有声输入设备 | `true` |
@@ -179,7 +180,7 @@ eve-transcribe --input-dir recordings --watch
 
 ### 音频格式
 
-固定为：WAV、16kHz、单声道。
+默认：FLAC（无损压缩）、16kHz、单声道。可通过 `--audio-format wav` 改为 WAV。
 
 ### VAD
 
@@ -238,8 +239,8 @@ uv sync
 
 ```json
 {
-  "audio_file": "eve_live_20260201_120513.wav",
-  "audio_path": "/path/to/recordings/20260201/eve_live_20260201_120513.wav",
+  "audio_file": "eve_live_20260201_120513.flac",
+  "audio_path": "/path/to/recordings/20260201/eve_live_20260201_120513.flac",
   "segment_start": "20260201_120513",
   "segment_start_time": "2026-02-01T12:05:13+08:00",
   "model": "Qwen/Qwen3-ASR-0.6B",

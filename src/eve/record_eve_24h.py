@@ -31,6 +31,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory to store audio segments.",
     )
     parser.add_argument(
+        "--audio-format",
+        choices=["flac", "wav"],
+        default="flac",
+        help="Archive audio format: flac (lossless compressed) or wav (uncompressed).",
+    )
+    parser.add_argument(
         "--device-check-seconds",
         type=float,
         default=2.0,
@@ -220,6 +226,7 @@ def run_recording(args: argparse.Namespace) -> int:
         vad=SileroVAD(),
         transcriber=transcriber,
     )
+    recorder.config.archive_audio_format = args.audio_format
     recorder.config.max_segment_minutes = args.segment_minutes
     recorder.config.device_check_seconds = args.device_check_seconds
     recorder.config.device_retry_seconds = args.device_retry_seconds

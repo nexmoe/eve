@@ -49,6 +49,7 @@ class VadConfig:
     min_silence_ms: int = 1200
     max_segment_minutes: float = 60.0
     max_speech_segment_seconds: float = 20.0
+    archive_audio_format: str = "flac"
     device_check_seconds: float = 2.0
     device_retry_seconds: float = 2.0
     auto_switch_enabled: bool = True
@@ -828,10 +829,22 @@ class LiveVadRecorder:
         self._device_unavailable = False
         self._logger.info("%s", message)
 
+    def _soundfile_format_settings(self) -> tuple[str, str, str]:
+        configured = str(self.config.archive_audio_format).strip().lower()
+        if configured == "wav":
+            return ("wav", "WAV", "PCM_16")
+        if configured != "flac":
+            self._logger.warning(
+                "Unknown audio format '%s', fallback to flac.",
+                self.config.archive_audio_format,
+            )
+        return ("flac", "FLAC", "PCM_16")
+
     def _open_live_file(self) -> None:
         now = datetime.now().astimezone()
         date_folder = now.strftime("%Y%m%d")
-        filename = f"{self.prefix}_live_{now.strftime('%Y%m%d_%H%M%S')}.wav"
+        extension, soundfile_format, soundfile_subtype = self._soundfile_format_settings()
+        filename = f"{self.prefix}_live_{now.strftime('%Y%m%d_%H%M%S')}.{extension}"
         day_dir = os.path.join(self.output_dir, date_folder)
         os.makedirs(day_dir, exist_ok=True)
         path = os.path.join(day_dir, filename)
@@ -840,7 +853,8 @@ class LiveVadRecorder:
             mode="w",
             samplerate=self.config.sample_rate,
             channels=self.config.channels,
-            subtype="PCM_16",
+            format=soundfile_format,
+            subtype=soundfile_subtype,
         )
         self._segment_start_time = time.time()
         self._stream_start_time = self._segment_start_time
