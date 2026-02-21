@@ -6,6 +6,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build on ${{ matrix.os }}
@@ -58,3 +61,27 @@ jobs:
         with:
           name: eve-installer-${{ runner.os }}
           path: dist/installers/*
+
+  release:
+    name: Create GitHub Release
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: eve-installer-*
+          merge-multiple: true
+          path: dist/installers
+
+      - name: Create Release and upload installers
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/installers/*.exe
+            dist/installers/*.deb
+            dist/installers/*.pkg
