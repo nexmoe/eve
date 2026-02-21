@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.3.2 - 2026-02-21
+
+### Fixes
+- Fix installer packaging for large PyInstaller builds by switching to onedir mode.
+
 ## 0.3.1 - 2026-02-21
 
 ### Documentation
