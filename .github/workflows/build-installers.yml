@@ -30,6 +30,22 @@ jobs:
       - name: Install NSIS
         if: runner.os == 'Windows'
         run: choco install nsis -y
+        shell: pwsh
+
+      - name: Expose NSIS on PATH
+        if: runner.os == 'Windows'
+        run: |
+          $nsisBin = "${env:ProgramFiles(x86)}\NSIS"
+          if (!(Test-Path (Join-Path $nsisBin "makensis.exe"))) {
+            throw "makensis.exe not found under $nsisBin"
+          }
+          $nsisBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        shell: pwsh
+
+      - name: Verify makensis
+        if: runner.os == 'Windows'
+        run: makensis /VERSION
+        shell: pwsh
 
       - name: Install dependencies
         run: uv sync

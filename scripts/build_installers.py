@@ -201,7 +201,13 @@ SectionEnd
 
 
 def build_windows_installer(version: str, arch: str, eve_binary: Path, output_dir: Path, temp_dir: Path) -> Path:
-    if shutil.which("makensis") is None:
+    makensis = shutil.which("makensis")
+    if makensis is None and sys.platform == "win32":
+        default_makensis = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "NSIS" / "makensis.exe"
+        if default_makensis.exists():
+            makensis = str(default_makensis)
+
+    if makensis is None:
         raise RuntimeError(
             "NSIS is required on Windows to create an installer. Install it with 'choco install nsis -y'."
         )
@@ -215,7 +221,7 @@ def build_windows_installer(version: str, arch: str, eve_binary: Path, output_di
     output_name = f"eve-{version}-windows-{arch}-setup.exe"
     script_path = nsis_root / "installer.nsi"
     script_path.write_text(windows_nsis_script(version=version, output_name=output_name), encoding="utf-8")
-    run(["makensis", str(script_path)], cwd=nsis_root)
+    run([makensis, str(script_path)], cwd=nsis_root)
 
     output_path = output_dir / output_name
     shutil.copy2(nsis_root / output_name, output_path)
