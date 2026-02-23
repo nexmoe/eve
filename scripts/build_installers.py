@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import os
 import platform
 import shutil
@@ -71,6 +72,13 @@ def make_executable(path: Path) -> None:
     path.chmod(current | 0o755)
 
 
+def resolve_package_dir(package_name: str) -> Path | None:
+    spec = importlib.util.find_spec(package_name)
+    if spec is None or not spec.submodule_search_locations:
+        return None
+    return Path(next(iter(spec.submodule_search_locations))).resolve()
+
+
 def build_binary(temp_dir: Path) -> tuple[Path, Path]:
     dist_dir = temp_dir / "dist"
     work_dir = temp_dir / "build"
@@ -79,25 +87,53 @@ def build_binary(temp_dir: Path) -> tuple[Path, Path]:
     work_dir.mkdir(parents=True, exist_ok=True)
     spec_dir.mkdir(parents=True, exist_ok=True)
 
-    run(
+    pyinstaller_cmd = [
+        sys.executable,
+        "-m",
+        "PyInstaller",
+        "--noconfirm",
+        "--clean",
+        "--onedir",
+        "--name",
+        "eve",
+        "--distpath",
+        str(dist_dir),
+        "--workpath",
+        str(work_dir / "eve"),
+        "--specpath",
+        str(spec_dir),
+    ]
+
+    # nagisa uses absolute imports like `import prepro` and mutates sys.path at runtime.
+    # Add its package directory to PyInstaller's module search path and include those modules explicitly.
+    nagisa_dir = resolve_package_dir("nagisa")
+    if nagisa_dir is not None:
+        pyinstaller_cmd.extend(["--paths", str(nagisa_dir)])
+    pyinstaller_cmd.extend(
         [
-            sys.executable,
-            "-m",
-            "PyInstaller",
-            "--noconfirm",
-            "--clean",
-            "--onedir",
-            "--name",
-            "eve",
-            "--distpath",
-            str(dist_dir),
-            "--workpath",
-            str(work_dir / "eve"),
-            "--specpath",
-            str(spec_dir),
-            str(ENTRYPOINT_DIR / "eve_cli.py"),
+            "--hidden-import",
+            "prepro",
+            "--hidden-import",
+            "model",
+            "--hidden-import",
+            "mecab_system_eval",
+            "--hidden-import",
+            "tagger",
+            "--hidden-import",
+            "train",
+            "--hidden-import",
+            "silero_vad.data",
+            "--collect-data",
+            "nagisa",
+            "--collect-data",
+            "qwen_asr",
+            "--collect-data",
+            "silero_vad",
         ]
     )
+    pyinstaller_cmd.append(str(ENTRYPOINT_DIR / "eve_cli.py"))
+
+    run(pyinstaller_cmd)
 
     app_dir = dist_dir / "eve"
     suffix = ".exe" if sys.platform == "win32" else ""

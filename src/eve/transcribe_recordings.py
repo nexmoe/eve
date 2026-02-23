@@ -6,6 +6,7 @@ import os
 import time
 
 from .asr.qwen import QwenASRTranscriber
+from .utils.console_ui import show_transcribe_welcome, startup_status
 from .utils.logging_utils import init_logging
 from .utils.segment_utils import (
     audio_basename,
@@ -126,10 +127,18 @@ def build_transcriber(args: argparse.Namespace) -> QwenASRTranscriber:
         forced_aligner=forced_aligner,
         return_time_stamps=return_time_stamps,
     )
-    transcriber.verify_dependencies()
+    with startup_status("Checking ASR dependencies..."):
+        transcriber.verify_dependencies()
     if args.asr_preload:
-        logging.getLogger(__name__).info("Loading ASR model...")
-        transcriber.preload()
+        with startup_status(
+            "Initializing ASR model (first run may download model files)..."
+        ):
+            transcriber.preload()
+    else:
+        logging.getLogger(__name__).info(
+            "ASR model will load on first file. "
+            "If not cached locally, first transcription may take longer."
+        )
     return transcriber
 
 
@@ -314,6 +323,12 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
     init_logging()
+    show_transcribe_welcome(
+        input_dir=args.input_dir,
+        watch=args.watch,
+        asr_model=args.asr_model,
+        asr_preload=args.asr_preload,
+    )
 
     transcriber = build_transcriber(args)
 
