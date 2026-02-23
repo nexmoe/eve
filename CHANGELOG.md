@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.3.5 - 2026-02-23
+
+### Features
+- Add startup console UI with welcome panels and spinner statuses for record and transcribe commands
+
+### Fixes
+- Fix ASR packaging for frozen builds by including required data files for nagisa, qwen_asr, and silero_vad
+
 ## 0.3.4 - 2026-02-23
 
 ### CI
