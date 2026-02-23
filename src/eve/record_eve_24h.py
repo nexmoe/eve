@@ -3,6 +3,7 @@ import argparse
 import logging
 
 from .utils.logging_utils import init_logging
+from .utils.console_ui import show_recording_welcome, startup_status
 from .asr.qwen import QwenASRTranscriber
 from .recorders.live_vad_recorder import LiveVadRecorder
 from .recorders.silero_vad import SileroVAD
@@ -205,14 +206,31 @@ def build_transcriber(args: argparse.Namespace) -> QwenASRTranscriber:
         forced_aligner=forced_aligner,
         return_time_stamps=return_time_stamps,
     )
-    transcriber.verify_dependencies()
+    with startup_status("Checking ASR dependencies..."):
+        transcriber.verify_dependencies()
     if args.asr_preload:
-        logging.getLogger(__name__).info("Loading ASR model...")
-        transcriber.preload()
+        with startup_status(
+            "Initializing ASR model (first run may download model files)..."
+        ):
+            transcriber.preload()
+    else:
+        logging.getLogger(__name__).info(
+            "ASR model will load on first speech segment. "
+            "If not cached locally, first transcription may take longer."
+        )
     return transcriber
 
 
 def run_recording(args: argparse.Namespace) -> int:
+    show_recording_welcome(
+        output_dir=args.output_dir,
+        device=args.device,
+        asr_enabled=not args.disable_asr,
+        asr_model=args.asr_model,
+        asr_preload=args.asr_preload,
+        segment_minutes=args.segment_minutes,
+        total_hours=args.total_hours,
+    )
     transcriber = None
     if not args.disable_asr:
         transcriber = build_transcriber(args)
