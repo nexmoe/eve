@@ -52,6 +52,7 @@ class VadConfig:
     archive_audio_format: str = "flac"
     device_check_seconds: float = 2.0
     device_retry_seconds: float = 2.0
+    stream_idle_timeout_seconds: float = 5.0
     auto_switch_enabled: bool = True
     auto_switch_scan_seconds: float = 3.0
     auto_switch_probe_seconds: float = 0.25
@@ -112,6 +113,7 @@ class LiveVadRecorder:
         self._device_unavailable = False
         self._device_fingerprint: dict | None = None
         self._device_list_snapshot: tuple | None = None
+        self._last_audio_callback_time = 0.0
         self._last_auto_switch_check = 0.0
         self._auto_switch_round_robin_offset = 0
         self._last_switch_time = 0.0
@@ -788,6 +790,7 @@ class LiveVadRecorder:
         self._had_speech = False
         self._segment_has_transcripts = False
         self._last_input_rms = 0.0
+        self._last_audio_callback_time = 0.0
         self._clear_switch_candidate()
         self._drain_audio_queue()
 
@@ -1014,6 +1017,7 @@ class LiveVadRecorder:
     def _audio_callback(self, indata, frames, time_info, status) -> None:
         if status:
             pass
+        self._last_audio_callback_time = time.time()
         self._audio_queue.put(indata.copy())
 
     def _record_loop(self) -> None:
@@ -1032,6 +1036,7 @@ class LiveVadRecorder:
             callback=self._audio_callback,
             device=self.device,
         ):
+            self._last_audio_callback_time = time.time()
             self._capture_device_fingerprint()
             self._open_live_file()
             if self._device_unavailable:
@@ -1043,6 +1048,15 @@ class LiveVadRecorder:
                 try:
                     block = self._audio_queue.get(timeout=0.1)
                 except queue.Empty:
+                    idle_timeout = max(
+                        0.0, float(self.config.stream_idle_timeout_seconds)
+                    )
+                    if idle_timeout > 0 and self._last_audio_callback_time > 0:
+                        idle_for = time.time() - self._last_audio_callback_time
+                        if idle_for >= idle_timeout:
+                            raise DeviceUnavailableError(
+                                f"input stream stalled (no audio callback for {idle_for:.1f}s)"
+                            )
                     continue
                 audio = block.reshape(-1)
                 for offset in range(0, len(audio), chunk_samples):

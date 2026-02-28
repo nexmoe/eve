@@ -60,8 +60,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--auto-switch-device",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Automatically switch to the input device that currently has usable audio.",
+        default=None,
+        help=(
+            "Automatically switch to the input device that currently has usable audio. "
+            "Defaults to enabled when --device is default/auto, disabled when an explicit device is set."
+        ),
     )
     parser.add_argument(
         "--auto-switch-scan-seconds",
@@ -230,6 +233,11 @@ def build_transcriber(args: argparse.Namespace) -> QwenASRTranscriber:
 
 
 def run_recording(args: argparse.Namespace) -> int:
+    device_text = str(args.device or "").strip().lower()
+    auto_switch_enabled = args.auto_switch_device
+    if auto_switch_enabled is None:
+        auto_switch_enabled = device_text in ("", "default", "auto")
+
     show_recording_welcome(
         output_dir=args.output_dir,
         device=args.device,
@@ -256,7 +264,7 @@ def run_recording(args: argparse.Namespace) -> int:
     recorder.config.max_segment_minutes = args.segment_minutes
     recorder.config.device_check_seconds = args.device_check_seconds
     recorder.config.device_retry_seconds = args.device_retry_seconds
-    recorder.config.auto_switch_enabled = args.auto_switch_device
+    recorder.config.auto_switch_enabled = auto_switch_enabled
     recorder.config.auto_switch_scan_seconds = args.auto_switch_scan_seconds
     recorder.config.auto_switch_probe_seconds = args.auto_switch_probe_seconds
     recorder.config.auto_switch_max_candidates_per_scan = (
