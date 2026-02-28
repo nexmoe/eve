@@ -142,10 +142,17 @@ eve --device 2
 eve --device "Built-in Microphone"
 ```
 
-Auto switch to active microphone is enabled by default:
+Auto switch to active microphone is enabled by default when using the default input device:
 
 ```bash
 eve
+```
+
+When `--device` is explicitly set (for example `--device 3`), auto-switch defaults to off.
+Enable it manually if needed:
+
+```bash
+eve --device 3 --auto-switch-device
 ```
 
 For stricter debounce behavior, increase confirmation count and cooldown:
@@ -209,7 +216,7 @@ The tables below list all configuration parameters by category with default valu
 | `--audio-format` | Archive format (`flac` lossless / `wav` uncompressed) | `flac` |
 | `--device-check-seconds` | Device availability check interval (seconds, <=0 to disable) | `2` |
 | `--device-retry-seconds` | Retry interval after mic error (seconds) | `2` |
-| `--auto-switch-device` / `--no-auto-switch-device` | Auto-switch to currently active input device | `true` |
+| `--auto-switch-device` / `--no-auto-switch-device` | Auto-switch to currently active input device | `auto (on for default/auto device, off for explicit device)` |
 | `--auto-switch-scan-seconds` | Auto-switch scan interval (seconds) | `3` |
 | `--auto-switch-probe-seconds` | Probe duration per candidate device (seconds) | `0.25` |
 | `--auto-switch-max-candidates-per-scan` | Max candidates to probe per scan | `2` |
@@ -279,7 +286,7 @@ When ASR is disabled, no model is loaded and only audio is recorded. You can lat
 - Recording relies on `sounddevice`; device list is based on `eve --list-devices`.
 - If your shell shows `getcwd: cannot access parent directories` or `FileNotFoundError: [Errno 2] No such file or directory`, your current directory may have been deleted. Run `cd` to an existing path and retry.
 - If mic becomes unavailable at runtime, retry is automatic based on `--device-retry-seconds`.
-- Device auto-switch uses threshold + debounce strategy and can be disabled with `--no-auto-switch-device`.
+- Device auto-switch uses threshold + debounce strategy. It defaults to enabled with `--device default/auto`, and disabled when an explicit device is selected.
 - By default, input devices containing `iphone` or `continuity` are ignored to avoid frequent interruptions from Continuity Mic disconnects; customize via `--exclude-device-keywords`.
 - Single-line volume feedback is enabled by default (in-place refresh, no log flooding); disable with `--no-console-feedback`.
 - With ASR enabled, the console keeps two fixed lines: line 1 for recording status, line 2 for recent transcription history.

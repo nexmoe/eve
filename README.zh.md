@@ -142,10 +142,16 @@ eve --device 2
 eve --device "Built-in Microphone"
 ```
 
-默认已开启“有声麦克风自动切换”：
+使用默认输入设备时，会默认开启“有声麦克风自动切换”：
 
 ```bash
 eve
+```
+
+当显式指定 `--device`（例如 `--device 3`）时，默认关闭自动切麦；如需开启可手动指定：
+
+```bash
+eve --device 3 --auto-switch-device
 ```
 
 需要更严格防抖时可调高确认次数和切换冷却时间：
@@ -209,7 +215,7 @@ eve transcribe --input-dir recordings --watch
 | `--audio-format` | 归档音频格式（`flac` 无损压缩 / `wav` 未压缩） | `flac` |
 | `--device-check-seconds` | 麦克风可用性检测间隔（秒，<=0 关闭） | `2` |
 | `--device-retry-seconds` | 麦克风异常后重试间隔（秒） | `2` |
-| `--auto-switch-device` / `--no-auto-switch-device` | 自动切换到当前有声输入设备 | `true` |
+| `--auto-switch-device` / `--no-auto-switch-device` | 自动切换到当前有声输入设备 | auto（`--device` 为 default/auto 时开启，显式设备时关闭） |
 | `--auto-switch-scan-seconds` | 自动切换扫描间隔（秒） | `3` |
 | `--auto-switch-probe-seconds` | 每个候选设备的探测时长（秒） | `0.25` |
 | `--auto-switch-max-candidates-per-scan` | 每次扫描最多探测的候选麦克风数量 | `2` |
@@ -279,7 +285,7 @@ uv sync
 - 录音基于 `sounddevice`，设备列表以 `eve --list-devices` 输出为准。
 - 如果终端出现 `getcwd: cannot access parent directories` 或 `FileNotFoundError: [Errno 2] No such file or directory`，通常是当前目录已被删除。请先 `cd` 到一个存在的目录再重试。
 - 运行中若麦克风不可用，会按 `--device-retry-seconds` 间隔自动重试。
-- 默认会按阈值和防抖策略在输入设备间自动切换，可用 `--no-auto-switch-device` 关闭。
+- 自动切麦使用阈值 + 防抖策略：`--device` 为 default/auto 时默认开启，显式指定设备时默认关闭。
 - 默认会忽略名称包含 `iphone`、`continuity` 的输入设备，避免 Continuity 麦克风断连导致频繁中断；可用 `--exclude-device-keywords` 自定义。
 - 默认会显示单行音量条（覆盖刷新，不刷屏）；可用 `--no-console-feedback` 关闭。
 - 启用 ASR 时，控制台会固定两行区域刷新：第一行显示录音状态，第二行单独显示最近转写历史（不刷屏）。
