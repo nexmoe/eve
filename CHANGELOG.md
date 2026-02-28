@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.3.6 - 2026-02-28
+
+### Features
+- Add `--version` / `-v` flags to show CLI version from both the root command and subcommands.
+
+### Fixes
+- Improve packaged runtime resilience by normalizing working directory and model/resource path resolution.
+
 ## 0.3.5 - 2026-02-23
 
 ### Features
