@@ -8,6 +8,7 @@ import time
 from .asr.qwen import QwenASRTranscriber
 from .utils.console_ui import show_transcribe_welcome, startup_status
 from .utils.logging_utils import init_logging
+from .utils.version_utils import get_eve_version
 from .utils.segment_utils import (
     audio_basename,
     iso_now,
@@ -33,6 +34,13 @@ def build_parser() -> argparse.ArgumentParser:
             "Transcribe existing audio recordings (WAV/FLAC) and write/update JSON transcripts. "
             "Useful for offline/asynchronous ASR after recording."
         )
+    )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"eve {get_eve_version()}",
+        help="Show version and exit.",
     )
     parser.add_argument(
         "--input-dir",

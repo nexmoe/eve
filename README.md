@@ -243,6 +243,7 @@ To keep transcription near real-time, one continuous speech segment is force-spl
 
 | Parameter | Description | Default |
 | --- | --- | --- |
+| `-V, --version` | Show version and exit | - |
 | `--list-devices` | List available devices and exit | `false` |
 
 ### ASR Model and Device
@@ -276,6 +277,7 @@ When ASR is disabled, no model is loaded and only audio is recorded. You can lat
 ## Notes
 
 - Recording relies on `sounddevice`; device list is based on `eve --list-devices`.
+- If your shell shows `getcwd: cannot access parent directories` or `FileNotFoundError: [Errno 2] No such file or directory`, your current directory may have been deleted. Run `cd` to an existing path and retry.
 - If mic becomes unavailable at runtime, retry is automatic based on `--device-retry-seconds`.
 - Device auto-switch uses threshold + debounce strategy and can be disabled with `--no-auto-switch-device`.
 - By default, input devices containing `iphone` or `continuity` are ignored to avoid frequent interruptions from Continuity Mic disconnects; customize via `--exclude-device-keywords`.

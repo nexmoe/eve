@@ -243,6 +243,7 @@ eve transcribe --input-dir recordings --watch
 
 | 参数 | 说明 | 默认值 |
 | --- | --- | --- |
+| `-V, --version` | 显示版本号并退出 | - |
 | `--list-devices` | 列出可用设备并退出 | `false` |
 
 ### ASR 模型与设备
@@ -276,6 +277,7 @@ uv sync
 ## 其他说明
 
 - 录音基于 `sounddevice`，设备列表以 `eve --list-devices` 输出为准。
+- 如果终端出现 `getcwd: cannot access parent directories` 或 `FileNotFoundError: [Errno 2] No such file or directory`，通常是当前目录已被删除。请先 `cd` 到一个存在的目录再重试。
 - 运行中若麦克风不可用，会按 `--device-retry-seconds` 间隔自动重试。
 - 默认会按阈值和防抖策略在输入设备间自动切换，可用 `--no-auto-switch-device` 关闭。
 - 默认会忽略名称包含 `iphone`、`continuity` 的输入设备，避免 Continuity 麦克风断连导致频繁中断；可用 `--exclude-device-keywords` 自定义。

@@ -6,6 +6,7 @@ import threading
 import warnings
 
 from ..utils.segment_utils import serialize_time_stamps
+from ..utils.cwd_utils import ensure_accessible_cwd
 
 try:
     from audioread import NoBackendError
@@ -22,6 +23,36 @@ warnings.filterwarnings(
     category=SyntaxWarning,
     module=r"nagisa\.tagger",
 )
+
+
+def _asr_dependency_error_message(exc: Exception) -> str:
+    if isinstance(exc, ModuleNotFoundError):
+        missing = getattr(exc, "name", "")
+        if missing in {"qwen_asr", "torch"}:
+            return (
+                "qwen-asr and torch are required for ASR. "
+                "Install dependencies with `uv sync` "
+                "(or `pip install -U qwen-asr torch`)."
+            )
+    if isinstance(exc, FileNotFoundError):
+        return (
+            "ASR dependency import failed because the current working directory "
+            "is not available. Run `cd` to an existing directory and retry."
+        )
+    return (
+        "ASR dependency import failed with "
+        f"{exc.__class__.__name__}: {exc}"
+    )
+
+
+def _ensure_cwd_for_imports() -> None:
+    resolved = ensure_accessible_cwd()
+    if resolved is not None:
+        return
+    raise RuntimeError(
+        "Current working directory is unavailable and no safe fallback directory "
+        "(home or /) could be selected."
+    )
 
 
 class QwenASRTranscriber:
@@ -56,13 +87,12 @@ class QwenASRTranscriber:
         )
 
     def verify_dependencies(self) -> None:
+        _ensure_cwd_for_imports()
         try:
             import torch  # noqa: F401
             from qwen_asr import Qwen3ASRModel  # noqa: F401
         except Exception as exc:
-            raise RuntimeError(
-                "qwen-asr is required for ASR. Install it with `pip install -U qwen-asr`."
-            ) from exc
+            raise RuntimeError(_asr_dependency_error_message(exc)) from exc
 
     def _resolve_device_map(self, torch) -> str:
         if self.device and self.device != "auto":
@@ -92,13 +122,12 @@ class QwenASRTranscriber:
         with self._lock:
             if self._model is not None:
                 return
+            _ensure_cwd_for_imports()
             try:
                 import torch
                 from qwen_asr import Qwen3ASRModel
             except Exception as exc:
-                raise RuntimeError(
-                    "qwen-asr is required for ASR. Install it with `pip install -U qwen-asr`."
-                ) from exc
+                raise RuntimeError(_asr_dependency_error_message(exc)) from exc
 
             device_map = self._resolve_device_map(torch)
             dtype = self._resolve_dtype(torch, device_map)

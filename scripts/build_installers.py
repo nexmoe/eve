@@ -102,6 +102,8 @@ def build_binary(temp_dir: Path) -> tuple[Path, Path]:
         str(work_dir / "eve"),
         "--specpath",
         str(spec_dir),
+        "--copy-metadata",
+        "eve",
     ]
 
     # nagisa uses absolute imports like `import prepro` and mutates sys.path at runtime.
@@ -123,6 +125,10 @@ def build_binary(temp_dir: Path) -> tuple[Path, Path]:
             "train",
             "--hidden-import",
             "silero_vad.data",
+            # Rich loads unicode tables via dynamic module names like
+            # `rich._unicode_data.unicode17-0-0`, which static analysis misses.
+            "--collect-submodules",
+            "rich._unicode_data",
             "--collect-data",
             "nagisa",
             "--collect-data",

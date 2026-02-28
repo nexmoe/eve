@@ -4,6 +4,7 @@ import logging
 
 from .utils.logging_utils import init_logging
 from .utils.console_ui import show_recording_welcome, startup_status
+from .utils.version_utils import get_eve_version
 from .asr.qwen import QwenASRTranscriber
 from .recorders.live_vad_recorder import LiveVadRecorder
 from .recorders.silero_vad import SileroVAD
@@ -16,6 +17,13 @@ def build_parser() -> argparse.ArgumentParser:
             "Transcribes each segment with Qwen3-ASR by default. "
             "VAD is applied during recording to keep only speech."
         )
+    )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"eve {get_eve_version()}",
+        help="Show version and exit.",
     )
     parser.add_argument(
         "--device",
