@@ -1117,6 +1117,9 @@ class LiveVadRecorder:
                 self._render_console_feedback()
                 self._check_auto_switch()
                 if self._should_rotate():
+                    if self._in_speech:
+                        end_sample = self._total_samples
+                        self._finalize_speech_segment(end_sample)
                     self._close_stream()
                     self._open_live_file()
 
