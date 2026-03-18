@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.4.0 - 2026-03-18
+
+### Features
+- Add desktop app runtime and skill-packaged workflow.
+
+### Fixes
+- Fix speech segment loss during segment rotation (by @jeasonzhang-eth).
+- Fix macOS recorder stalls and improve default switching behavior.
+
 ## 0.3.6 - 2026-02-28
 
 ### Features
