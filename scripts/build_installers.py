@@ -7,6 +7,7 @@ import argparse
 import importlib.util
 import os
 import platform
+import plistlib
 import shutil
 import subprocess
 import sys
@@ -182,7 +183,7 @@ def build_binary(temp_dir: Path) -> tuple[Path, Path]:
     return eve_binary, app_dir
 
 
-def build_macos_desktop_app(temp_dir: Path) -> Path:
+def build_macos_desktop_app(temp_dir: Path, version: str) -> Path:
     dist_dir = temp_dir / "dist"
     work_dir = temp_dir / "build"
     spec_dir = temp_dir / "spec"
@@ -212,6 +213,7 @@ def build_macos_desktop_app(temp_dir: Path) -> Path:
     app_bundle = dist_dir / "eve.app"
     if not app_bundle.exists():
         raise RuntimeError("PyInstaller build did not produce the expected eve.app bundle.")
+    set_macos_bundle_version(app_bundle, version)
     return app_bundle
 
 
@@ -224,6 +226,50 @@ def copy_bundle(source_dir: Path, target_dir: Path) -> None:
     if target_dir.exists():
         shutil.rmtree(target_dir)
     shutil.copytree(source_dir, target_dir, symlinks=True)
+
+
+def clean_pkg_source(path: Path) -> None:
+    run(["xattr", "-cr", str(path)])
+    for metadata_file in path.rglob("._*"):
+        metadata_file.unlink(missing_ok=True)
+
+
+def set_macos_bundle_version(app_bundle: Path, version: str) -> None:
+    info_plist = app_bundle / "Contents" / "Info.plist"
+    if not info_plist.exists():
+        raise RuntimeError(f"Missing Info.plist in app bundle: {app_bundle}")
+
+    with info_plist.open("rb") as handle:
+        payload = plistlib.load(handle)
+
+    payload["CFBundleShortVersionString"] = version
+    payload["CFBundleVersion"] = version
+
+    with info_plist.open("wb") as handle:
+        plistlib.dump(payload, handle)
+
+
+def write_macos_component_plist(root_dir: Path, bundle_path: str, output_path: Path) -> Path:
+    run(["pkgbuild", "--analyze", "--root", str(root_dir), str(output_path)])
+    with output_path.open("rb") as handle:
+        payload = plistlib.load(handle)
+
+    for component in payload:
+        if component.get("RootRelativeBundlePath") != bundle_path:
+            continue
+        component["BundleIsRelocatable"] = False
+        component["BundleHasStrictIdentifier"] = True
+        with output_path.open("wb") as handle:
+            plistlib.dump(payload, handle)
+        return output_path
+
+    raise RuntimeError(f"Bundle {bundle_path} not found in component plist for {root_dir}")
+
+
+def write_macos_product_requirements(output_path: Path) -> Path:
+    with output_path.open("wb") as handle:
+        plistlib.dump({"home": False}, handle)
+    return output_path
 
 
 def write_unix_launcher(path: Path, target_binary: str) -> None:
@@ -249,32 +295,80 @@ def build_macos_pkg(
     output_dir: Path,
     temp_dir: Path,
 ) -> Path:
-    if shutil.which("pkgbuild") is None:
-        raise RuntimeError("pkgbuild is required on macOS to create a .pkg installer.")
+    if shutil.which("pkgbuild") is None or shutil.which("productbuild") is None:
+        raise RuntimeError("pkgbuild and productbuild are required on macOS to create a .pkg installer.")
 
-    pkg_root = temp_dir / "pkgroot"
-    install_bin_dir = pkg_root / "usr" / "local" / "bin"
-    install_lib_dir = pkg_root / "usr" / "local" / "lib" / "eve"
-    applications_dir = pkg_root / "Applications"
+    packages_dir = temp_dir / "packages"
+    packages_dir.mkdir(parents=True, exist_ok=True)
+
+    cli_root = temp_dir / "pkgroot-cli"
+    install_bin_dir = cli_root / "usr" / "local" / "bin"
+    install_lib_dir = cli_root / "usr" / "local" / "lib" / "eve"
     copy_bundle(eve_app_dir, install_lib_dir)
-    copy_bundle(eve_desktop_app, applications_dir / "eve.app")
     write_unix_launcher(install_bin_dir / "eve", "/usr/local/lib/eve/eve")
-    run(["xattr", "-cr", str(pkg_root)])
-    for metadata_file in pkg_root.rglob("._*"):
-        metadata_file.unlink(missing_ok=True)
+    clean_pkg_source(cli_root)
 
-    output_path = output_dir / f"eve-{version}-macos-{arch}.pkg"
+    desktop_root = temp_dir / "pkgroot-desktop"
+    desktop_bundle_path = desktop_root / "Applications" / "eve.app"
+    copy_bundle(eve_desktop_app, desktop_bundle_path)
+    clean_pkg_source(desktop_root)
+    desktop_component_plist = write_macos_component_plist(
+        root_dir=desktop_root,
+        bundle_path="Applications/eve.app",
+        output_path=temp_dir / "desktop-components.plist",
+    )
+    product_requirements = write_macos_product_requirements(
+        temp_dir / "product-requirements.plist"
+    )
+
+    cli_pkg = packages_dir / "eve-cli.pkg"
     run(
         [
             "pkgbuild",
             "--root",
-            str(pkg_root),
+            str(cli_root),
             "--identifier",
-            "build.nexmoe.eve",
+            "build.nexmoe.eve.cli",
             "--version",
             version,
             "--install-location",
             "/",
+            str(cli_pkg),
+        ]
+    )
+
+    desktop_pkg = packages_dir / "eve-desktop.pkg"
+    run(
+        [
+            "pkgbuild",
+            "--root",
+            str(desktop_root),
+            "--component-plist",
+            str(desktop_component_plist),
+            "--identifier",
+            "build.nexmoe.eve.desktop",
+            "--version",
+            version,
+            "--install-location",
+            "/",
+            str(desktop_pkg),
+        ]
+    )
+
+    output_path = output_dir / f"eve-{version}-macos-{arch}.pkg"
+    run(
+        [
+            "productbuild",
+            "--product",
+            str(product_requirements),
+            "--identifier",
+            "build.nexmoe.eve",
+            "--version",
+            version,
+            "--package",
+            str(cli_pkg),
+            "--package",
+            str(desktop_pkg),
             str(output_path),
         ]
     )
@@ -399,7 +493,7 @@ def main() -> int:
         _, eve_app_dir = build_binary(temp_dir=temp_dir)
 
         if target == "macos":
-            eve_desktop_app = build_macos_desktop_app(temp_dir=temp_dir)
+            eve_desktop_app = build_macos_desktop_app(temp_dir=temp_dir, version=version)
             desktop_app_output = output_dir / f"eve-{version}-macos-{arch}.app"
             copy_bundle(eve_desktop_app, desktop_app_output)
             installer = build_macos_pkg(
