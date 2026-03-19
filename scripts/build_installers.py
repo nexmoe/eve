@@ -15,6 +15,19 @@ import tempfile
 import tomllib
 from pathlib import Path
 
+try:
+    from installer_support import (
+        MACOS_MICROPHONE_USAGE_DESCRIPTION,
+        windows_nsis_script,
+        write_unix_launcher,
+    )
+except ModuleNotFoundError:
+    from scripts.installer_support import (
+        MACOS_MICROPHONE_USAGE_DESCRIPTION,
+        windows_nsis_script,
+        write_unix_launcher,
+    )
+
 ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT_FILE = ROOT / "pyproject.toml"
 ENTRYPOINT_DIR = ROOT / "packaging" / "entrypoints"
@@ -244,6 +257,7 @@ def set_macos_bundle_version(app_bundle: Path, version: str) -> None:
 
     payload["CFBundleShortVersionString"] = version
     payload["CFBundleVersion"] = version
+    payload["NSMicrophoneUsageDescription"] = MACOS_MICROPHONE_USAGE_DESCRIPTION
 
     with info_plist.open("wb") as handle:
         plistlib.dump(payload, handle)
@@ -270,21 +284,6 @@ def write_macos_product_requirements(output_path: Path) -> Path:
     with output_path.open("wb") as handle:
         plistlib.dump({"home": False}, handle)
     return output_path
-
-
-def write_unix_launcher(path: Path, target_binary: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "\n".join(
-            [
-                "#!/bin/sh",
-                f'exec "{target_binary}" "$@"',
-                "",
-            ]
-        ),
-        encoding="utf-8",
-    )
-    make_executable(path)
 
 
 def build_macos_pkg(
@@ -405,37 +404,6 @@ def build_linux_deb(version: str, eve_app_dir: Path, output_dir: Path, temp_dir:
     output_path = output_dir / f"eve_{version}_{deb_arch}.deb"
     run(["dpkg-deb", "--build", str(deb_root), str(output_path)])
     return output_path
-
-
-def windows_nsis_script(version: str, output_name: str) -> str:
-    return f"""!include "MUI2.nsh"
-Name "eve"
-OutFile "{output_name}"
-InstallDir "$PROGRAMFILES64\\eve"
-RequestExecutionLevel admin
-
-!define MUI_ABORTWARNING
-!insertmacro MUI_PAGE_DIRECTORY
-!insertmacro MUI_PAGE_INSTFILES
-!insertmacro MUI_UNPAGE_CONFIRM
-!insertmacro MUI_UNPAGE_INSTFILES
-!insertmacro MUI_LANGUAGE "English"
-
-Section "Install"
-  SetOutPath "$INSTDIR"
-  File /r "app\\*.*"
-  File /oname=README.md "README.md"
-  WriteUninstaller "$INSTDIR\\Uninstall.exe"
-SectionEnd
-
-Section "Uninstall"
-  RMDir /r "$INSTDIR\\_internal"
-  Delete "$INSTDIR\\README.md"
-  Delete "$INSTDIR\\Uninstall.exe"
-  Delete "$INSTDIR\\eve.exe"
-  RMDir /r "$INSTDIR"
-SectionEnd
-"""
 
 
 def build_windows_installer(version: str, arch: str, eve_app_dir: Path, output_dir: Path, temp_dir: Path) -> Path:
