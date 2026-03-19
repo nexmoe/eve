@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.4.2 - 2026-03-19
+
+### Fixes
+- Improve macOS installer packaging by splitting CLI/Desktop packages and setting bundle version metadata.
+
 ## 0.4.1 - 2026-03-18
 
 ### CI
