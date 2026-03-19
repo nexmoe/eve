@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.4.3 - 2026-03-19
+
+### Fixes
+- Extract shared installer script helpers and add macOS microphone usage metadata so recording permission prompts are declared correctly.
+
 ## 0.4.2 - 2026-03-19
 
 ### Fixes
