@@ -2,6 +2,14 @@
 
 本文档记录本项目的重要变更。
 
+## 0.5.2 - 2026-03-23
+
+### 修复
+- 本地 `electron-builder` 的 macOS/Windows 构建脚本增加 `--publish never`，避免构建时意外触发发布。
+
+### 文档
+- 为桌面端 `package.json` 补充 `description` 与 `author` 元数据。
+
 ## 0.5.1 - 2026-03-23
 
 ### 性能优化

@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.2 - 2026-03-23
+
+### Fixes
+- Run local `electron-builder` macOS/Windows scripts with `--publish never` to avoid unintended publishing during builds.
+
+### Documentation
+- Add `description` and `author` metadata to the desktop `package.json`.
+
 ## 0.5.1 - 2026-03-23
 
 ### Performance
