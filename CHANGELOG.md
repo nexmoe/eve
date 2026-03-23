@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.6 - 2026-03-24
+
+### Fixes
+- Publish the desktop release from the commit that actually contains the macOS unsigned-build workflow fix, so tagged builds use the explicit `mac.identity=null` and `pkg.identity=null` overrides.
+
 ## 0.5.5 - 2026-03-24
 
 ### Fixes

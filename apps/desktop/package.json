@@ -1,7 +1,7 @@
 {
   "name": "eve-desktop",
   "productName": "eve",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "Desktop app for eve.",
   "author": "nexmoe",
   "private": true,
