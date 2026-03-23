@@ -1,25 +1,18 @@
 [project]
 name = "eve"
-version = "0.4.3"
-description = "Add your description here"
+version = "0.5.0"
+description = "Python recording and transcription core for the eve desktop sidecar."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "numpy>=2.0.0",
   "qwen-asr",
   "rich",
   "silero-vad",
   "soundfile",
   "sounddevice",
-  "flet>=0.82.2",
-  "pystray>=0.19.5",
-  "pillow>=12.1.0",
   "platformdirs>=4.5.1",
-  "pyobjc-framework-avfoundation>=12.1 ; sys_platform == 'darwin'",
 ]
-
-[project.scripts]
-eve = "eve.cli:main"
-eve-desktop = "eve.desktop_app:main"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

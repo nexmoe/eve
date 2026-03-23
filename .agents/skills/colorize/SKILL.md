@@ -1,11 +1,8 @@
 ---
 name: colorize
 description: Add strategic color to features that are too monochromatic or lack visual interest. Makes interfaces more engaging and expressive.
-user-invokable: true
-args:
-  - name: target
-    description: The feature or component to colorize (optional)
-    required: false
+user-invocable: true
+argument-hint: [TARGET=<value>]
 ---
 
 Strategically introduce color to designs that are too monochromatic, gray, or lacking in visual warmth and personality.
@@ -34,7 +31,7 @@ Analyze the current state and identify opportunities:
    - **Wayfinding**: Helping users navigate and understand structure
    - **Delight**: Moments of visual interest and personality
 
-If any of these are unclear from the codebase, STOP and call the AskUserQuestion tool to clarify.
+If any of these are unclear from the codebase, ask the user directly to clarify what you cannot infer.
 
 **CRITICAL**: More color ≠ better. Strategic color beats rainbow vomit every time. Every color should have a purpose.
 

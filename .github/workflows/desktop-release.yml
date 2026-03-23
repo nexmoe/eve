@@ -1,0 +1,143 @@
+name: Desktop Release
+
+on:
+  push:
+    tags:
+      - "desktop-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.2"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck desktop
+        run: bun run typecheck
+
+      - name: Test desktop
+        run: bun run test
+
+      - name: Test sidecar protocol
+        run: uv run --with pytest pytest apps/desktop/vendor/eve-sidecar/tests
+
+  build:
+    needs: checks
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            build_script: build:mac
+            artifact_name: eve-dist-macos
+            artifact_pattern: |
+              apps/desktop/dist/*.dmg
+              apps/desktop/dist/*.pkg
+              apps/desktop/dist/*.zip
+              apps/desktop/dist/*.blockmap
+              apps/desktop/dist/latest-mac.yml
+          - os: windows-latest
+            build_script: build:win
+            artifact_name: eve-dist-windows
+            artifact_pattern: |
+              apps/desktop/dist/*.exe
+              apps/desktop/dist/*.blockmap
+              apps/desktop/dist/latest*.yml
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.2"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Mark POSIX wrapper executable
+        if: runner.os != 'Windows'
+        run: chmod +x apps/desktop/resources/bin/eve
+
+      - name: Build desktop package
+        working-directory: apps/desktop
+        run: bun run ${{ matrix.build_script }}
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+
+      - name: Smoke-check build output
+        shell: bash
+        run: |
+          while IFS= read -r pattern; do
+            [[ -z "$pattern" ]] && continue
+            compgen -G "$pattern" > /dev/null
+          done <<< "${{ matrix.artifact_pattern }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_pattern }}
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: eve-dist-*
+          merge-multiple: true
+          path: dist
+
+      - name: Create checksums
+        run: sha256sum dist/* > dist/SHA256SUMS.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.pkg
+            dist/*.zip
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest*.yml
+            dist/SHA256SUMS.txt
+          generate_release_notes: true

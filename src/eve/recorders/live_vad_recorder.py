@@ -112,6 +112,7 @@ class LiveVadRecorder:
         self._asr_json_lock = threading.Lock()
         self._writer = None
         self._segment_start_time = None
+        self._segment_started_at_datetime: datetime | None = None
         self._last_voice_time = None
         self._stream_start_time = None
         self._total_samples = 0
@@ -148,6 +149,7 @@ class LiveVadRecorder:
         )
         self._recent_waveform_samples: deque[float] = deque(maxlen=4096)
         self._console_state_lock = threading.Lock()
+        self._pending_device_switch_message: str | None = None
         self._logger = logging.getLogger(__name__)
 
     def _start_asr_worker(self) -> None:
@@ -193,7 +195,12 @@ class LiveVadRecorder:
         self._update_live_json_runtime_state()
 
     def apply_runtime_settings(self, settings) -> None:
+        next_device = self._normalize_device(getattr(settings, "device", self.device))
+        previous_label = self._device_label()
+        next_label = "default" if next_device is None else str(next_device)
         self.output_dir = str(settings.output_dir)
+        self.device = next_device
+        self._requested_default_device = self.device is None
         self.config.archive_audio_format = str(settings.audio_format)
         self.config.max_segment_minutes = float(settings.segment_minutes)
         self.config.device_check_seconds = float(settings.device_check_seconds)
@@ -217,11 +224,27 @@ class LiveVadRecorder:
         self.config.auto_switch_confirmations = int(settings.auto_switch_confirmations)
         self.config.console_feedback_enabled = bool(settings.console_feedback)
         self.config.console_feedback_hz = float(settings.console_feedback_hz)
+        if previous_label != next_label:
+            self._device_fingerprint = None
+            self._device_list_snapshot = None
+            self._pending_device_switch_message = (
+                f"Switched microphone from {previous_label} to {next_label}."
+            )
         self._update_live_json_runtime_state()
+
+    def _consume_pending_device_switch(self) -> None:
+        message = self._pending_device_switch_message
+        if not message:
+            return
+        self._pending_device_switch_message = None
+        raise DeviceSwitchRequest(message)
 
     def _update_live_json_runtime_state(self) -> None:
         if not self._live_json_path:
             return
+        if self.transcriber is None and not os.path.exists(self._live_json_path):
+            return
+        self._ensure_live_json_exists()
         with self._asr_json_lock:
             try:
                 with open(self._live_json_path, "r", encoding="utf-8") as handle:
@@ -995,6 +1018,7 @@ class LiveVadRecorder:
             subtype=soundfile_subtype,
         )
         self._segment_start_time = time.time()
+        self._segment_started_at_datetime = now
         self._stream_start_time = self._segment_start_time
         self._live_json_path = os.path.splitext(path)[0] + ".json"
         self._active_input_device_label = self._format_device_label(
@@ -1004,7 +1028,8 @@ class LiveVadRecorder:
         self._segment_has_transcripts = False
         with self._asr_json_lock:
             self._asr_pending_jobs.pop(self._live_json_path, None)
-        self._init_live_json(path, now)
+        if self.transcriber is not None:
+            self._init_live_json(path, now)
 
     def _init_live_json(self, audio_path: str, now: datetime) -> None:
         model_name = self.transcriber.model_name if self.transcriber else None
@@ -1036,8 +1061,18 @@ class LiveVadRecorder:
         }
         write_json_atomic(self._live_json_path, payload)
 
+    def _ensure_live_json_exists(self) -> None:
+        if not self._live_json_path or os.path.exists(self._live_json_path):
+            return
+        if self._writer is None:
+            return
+        started_at = self._segment_started_at_datetime or datetime.now().astimezone()
+        self._init_live_json(self._writer.name, started_at)
+
     def _finalize_live_json(self) -> None:
         if not self._live_json_path:
+            return
+        if not os.path.exists(self._live_json_path):
             return
         live_json_path = self._live_json_path
         with self._asr_json_lock:
@@ -1074,6 +1109,7 @@ class LiveVadRecorder:
             self._writer.close()
         self._writer = None
         self._segment_start_time = None
+        self._segment_started_at_datetime = None
         self._finalize_live_json()
 
     def _should_rotate(self) -> bool:
@@ -1091,6 +1127,10 @@ class LiveVadRecorder:
     def _append_live_segment(self, payload: dict, *, json_path: str | None = None) -> None:
         path = json_path or self._live_json_path
         if not path:
+            return
+        if not os.path.exists(path):
+            self._ensure_live_json_exists()
+        if not os.path.exists(path):
             return
         with self._asr_json_lock:
             try:
@@ -1179,6 +1219,7 @@ class LiveVadRecorder:
                 self._logger.info("Microphone restored. Resuming recording.")
                 self._device_unavailable = False
             while not self._stop_event.is_set():
+                self._consume_pending_device_switch()
                 self._check_device_health()
                 try:
                     block = self._audio_queue.get(timeout=0.1)

@@ -1,11 +1,8 @@
 ---
 name: overdrive
 description: Push interfaces past conventional limits with technically ambitious implementations. Whether that's a shader, a 60fps virtual table, spring physics on a dialog, or scroll-driven reveals — make users ask "how did they do that?"
-user-invokable: true
-args:
-  - name: target
-    description: The feature or area to push into overdrive (optional)
-    required: false
+user-invocable: true
+argument-hint: [TARGET=<value>]
 ---
 
 Start your response with:
@@ -28,7 +25,7 @@ Use the frontend-design skill — it contains design principles, anti-patterns, 
 This skill has the highest potential to misfire. Do NOT jump straight into implementation. You MUST:
 
 1. **Think through 2-3 different directions** — consider different techniques, levels of ambition, and aesthetic approaches. For each direction, briefly describe what the result would look and feel like.
-2. **STOP and call the AskUserQuestion tool to clarify.** to present these directions and get the user's pick before writing any code. Explain trade-offs (browser support, performance cost, complexity).
+2. **ask the user directly to clarify what you cannot infer.** to present these directions and get the user's pick before writing any code. Explain trade-offs (browser support, performance cost, complexity).
 3. Only proceed with the direction the user confirms.
 
 Skipping this step risks building something embarrassing that needs to be thrown away.

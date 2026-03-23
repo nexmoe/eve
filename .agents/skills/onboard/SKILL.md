@@ -1,11 +1,8 @@
 ---
 name: onboard
 description: Design or improve onboarding flows, empty states, and first-time user experiences. Helps users get started successfully and understand value quickly.
-user-invokable: true
-args:
-  - name: target
-    description: The feature or area needing onboarding (optional)
-    required: false
+user-invocable: true
+argument-hint: [TARGET=<value>]
 ---
 
 ## MANDATORY PREPARATION

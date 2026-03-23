@@ -1,11 +1,8 @@
 ---
 name: animate
 description: Review a feature and enhance it with purposeful animations, micro-interactions, and motion effects that improve usability and delight.
-user-invokable: true
-args:
-  - name: target
-    description: The feature or component to animate (optional)
-    required: false
+user-invocable: true
+argument-hint: [TARGET=<value>]
 ---
 
 Analyze a feature and strategically add animations and micro-interactions that enhance understanding, provide feedback, and create delight.
@@ -33,7 +30,7 @@ Analyze where motion would improve the experience:
    - Who's the audience? (Motion-sensitive users? Power users who want speed?)
    - What matters most? (One hero animation vs many micro-interactions?)
 
-If any of these are unclear from the codebase, STOP and call the AskUserQuestion tool to clarify.
+If any of these are unclear from the codebase, ask the user directly to clarify what you cannot infer.
 
 **CRITICAL**: Respect `prefers-reduced-motion`. Always provide non-animated alternatives for users who need them.
 

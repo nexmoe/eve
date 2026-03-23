@@ -236,6 +236,7 @@ class DesktopController:
         self._feedback_writer_thread: threading.Thread | None = None
         self._microphone_permission = microphone_permission_status()
         self._permission_request_in_flight = False
+        self._launch_permission_prompt_attempted = False
         self._status_message = "托盘已启动，等待操作。"
         self._window_visible = False
         self._show_window_requested = False
@@ -309,6 +310,7 @@ class DesktopController:
             if icon is not None:
                 button.setImage_(icon)
         self._refresh_macos_status_menu()
+        self._maybe_request_microphone_permission_on_launch()
 
         if self._settings.desktop.start_recording_on_launch:
             self._start_recording()
@@ -383,6 +385,8 @@ class DesktopController:
         elif self._show_window_requested:
             self._show_window_requested = False
             await self._show_window()
+
+        self._maybe_request_microphone_permission_on_launch()
 
         if self._settings.desktop.start_recording_on_launch and not self._window_only:
             self._start_recording()
@@ -1838,6 +1842,22 @@ class DesktopController:
         )
         thread.start()
 
+    def _maybe_request_microphone_permission_on_launch(self) -> None:
+        if sys.platform != "darwin" or self._settings.desktop.start_recording_on_launch:
+            return
+        with self._state_lock:
+            if self._launch_permission_prompt_attempted or self._permission_request_in_flight:
+                return
+            permission = microphone_permission_status()
+            self._microphone_permission = permission
+            if permission.state != "not_determined":
+                return
+            self._launch_permission_prompt_attempted = True
+            self._status_message = "正在主动申请麦克风权限，请在系统弹窗里点击允许。"
+        self._activate_macos_for_permission_prompt()
+        self._publish({"kind": "sync-state"})
+        self._request_microphone_permission_async(start_recording_after=False)
+
     def _request_microphone_permission_worker(self, start_recording_after: bool) -> None:
         try:
             permission = request_microphone_permission()
@@ -2137,6 +2157,19 @@ class DesktopController:
             app.activateIgnoringOtherApps_(True)
         except Exception as exc:
             LOGGER.debug("Failed to activate macOS app: %s", exc)
+
+    def _activate_macos_for_permission_prompt(self) -> None:
+        if sys.platform != "darwin":
+            return
+        try:
+            app = NSApp()
+            if app is None and NSApplication is not None:
+                app = NSApplication.sharedApplication()
+            if app is None:
+                return
+            app.activateIgnoringOtherApps_(True)
+        except Exception as exc:
+            LOGGER.debug("Failed to foreground macOS permission prompt: %s", exc)
 
     def _on_tray_show_settings(self, _icon, _item) -> None:
         LOGGER.info("Tray requested show-settings")

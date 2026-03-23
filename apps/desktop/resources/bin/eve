@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+EXECUTABLE="$SCRIPT_DIR/../../MacOS/eve"
+
+if [ ! -x "$EXECUTABLE" ]; then
+  echo "eve desktop executable not found: $EXECUTABLE" >&2
+  exit 1
+fi
+
+exec "$EXECUTABLE" --cli "$@"

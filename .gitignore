@@ -14,6 +14,7 @@ __pycache__/
 dist/
 build/
 editable_install/
+.generated/
 
 # Virtual environments
 .venv/
@@ -43,3 +44,10 @@ htmlcov/
 # Logs
 *.log
 logs/
+
+# Node / desktop
+node_modules/
+apps/desktop/out/
+apps/desktop/dist/
+apps/desktop/.electron-cache/
+apps/desktop/.electron-builder-cache/

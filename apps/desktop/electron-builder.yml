@@ -1,0 +1,76 @@
+appId: build.nexmoe.eve.desktop
+productName: eve
+directories:
+  buildResources: build
+files:
+  - '!**/*.map'
+  - '!**/__pycache__/**'
+  - '!.generated/**'
+  - '!dist/**'
+  - '!node_modules/**'
+  - '!scripts/**'
+  - '!src/**'
+  - '!vendor/**'
+  - '!tsconfig*.json'
+  - '!vitest.config.ts'
+  - '!electron.vite.config.ts'
+asar:
+  smartUnpack: false
+asarUnpack:
+  - resources/**
+extraResources:
+  - from: resources/bin
+    to: bin
+    filter:
+      - '**/*'
+  - from: .generated/shared-python-runtime
+    to: vendor/shared-python-runtime
+    filter:
+      - '**/*'
+      - '!**/__pycache__/**'
+      - '!**/*.pyc'
+      - '!**/*.pyo'
+  - from: vendor/eve-sidecar
+    to: vendor/eve-sidecar
+    filter:
+      - '**/*'
+      - '!**/__pycache__/**'
+      - '!**/*.pyc'
+      - '!**/*.pyo'
+mac:
+  artifactName: ${productName}-${version}-installer.${ext}
+  category: public.app-category.productivity
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  icon: resources/icon.icns
+  notarize: false
+  target:
+    - target: dmg
+    - target: zip
+    - target: pkg
+  extendInfo:
+    - CFBundleDisplayName: eve
+    - CFBundleName: eve
+    - LSUIElement: true
+    - NSMicrophoneUsageDescription: eve 需要麦克风权限来完成长时录音与实时转写。
+pkg:
+  allowAnywhere: false
+  allowCurrentUserHome: false
+  allowRootDirectory: true
+  artifactName: ${productName}-${version}-installer.${ext}
+  installLocation: /Applications
+win:
+  executableName: eve
+  icon: resources/icon.ico
+nsis:
+  artifactName: ${productName}-${version}-setup.${ext}
+  createDesktopShortcut: always
+  oneClick: false
+  perMachine: false
+  shortcutName: eve
+  uninstallDisplayName: eve
+npmRebuild: false
+publish:
+  - provider: github
+    owner: nexmoe
+    repo: eve

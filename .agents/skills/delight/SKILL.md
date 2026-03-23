@@ -1,11 +1,8 @@
 ---
 name: delight
 description: Add moments of joy, personality, and unexpected touches that make interfaces memorable and enjoyable to use. Elevates functional to delightful.
-user-invokable: true
-args:
-  - name: target
-    description: The feature or area to add delight to (optional)
-    required: false
+user-invocable: true
+argument-hint: [TARGET=<value>]
 ---
 
 Identify opportunities to add moments of joy, personality, and unexpected polish that transform functional interfaces into delightful experiences.
@@ -41,7 +38,7 @@ Identify where delight would enhance (not distract from) the experience:
    - **Helpful surprises**: Anticipating needs before users ask (productivity tools)
    - **Sensory richness**: Satisfying sounds, smooth animations (creative tools)
 
-If any of these are unclear from the codebase, STOP and call the AskUserQuestion tool to clarify.
+If any of these are unclear from the codebase, ask the user directly to clarify what you cannot infer.
 
 **CRITICAL**: Delight should enhance usability, never obscure it. If users notice the delight more than accomplishing their goal, you've gone too far.
 

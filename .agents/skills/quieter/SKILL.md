@@ -1,11 +1,8 @@
 ---
 name: quieter
 description: Tone down overly bold or visually aggressive designs. Reduces intensity while maintaining design quality and impact.
-user-invokable: true
-args:
-  - name: target
-    description: The feature or component to make quieter (optional)
-    required: false
+user-invocable: true
+argument-hint: [TARGET=<value>]
 ---
 
 Reduce visual intensity in designs that are too bold, aggressive, or overstimulating, creating a more refined and approachable aesthetic without losing effectiveness.
@@ -34,7 +31,7 @@ Analyze what makes the design feel too intense:
    - What's working? (Don't throw away good ideas)
    - What's the core message? (Preserve what matters)
 
-If any of these are unclear from the codebase, STOP and call the AskUserQuestion tool to clarify.
+If any of these are unclear from the codebase, ask the user directly to clarify what you cannot infer.
 
 **CRITICAL**: "Quieter" doesn't mean boring or generic. It means refined, sophisticated, and easier on the eyes. Think luxury, not laziness.
 

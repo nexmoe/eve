@@ -1,0 +1,19 @@
+{
+  "name": "eve-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "bun@1.3.2",
+  "scripts": {
+    "dev": "bun run dev:desktop",
+    "dev:desktop": "bun run --filter ./apps/desktop dev",
+    "build": "bun run --filter ./apps/desktop build",
+    "build:desktop": "bun run --filter ./apps/desktop build",
+    "test": "bun run --filter ./apps/desktop test",
+    "typecheck": "bun run --filter ./apps/desktop typecheck",
+    "lint": "bun run --filter ./apps/desktop lint"
+  }
+}
