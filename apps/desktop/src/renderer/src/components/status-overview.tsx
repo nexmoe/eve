@@ -31,6 +31,7 @@ export function StatusOverview({
     .filter((item) => item.length > 0 && item !== preview)
     .slice(0, MAX_HISTORY_ITEMS);
   const hasTranscript = preview.length > 0 || history.length > 0;
+  const vadState = getVadState(snapshot, t);
 
   return (
     <div className="space-y-4">
@@ -76,24 +77,27 @@ export function StatusOverview({
         className="w-full"
       />
 
-      {/* Metrics row */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="metric-card-compact">
-          <Mic className="h-3.5 w-3.5 text-[color:var(--accent)]" />
-          <div className="min-w-0 flex-1">
-            <div className="metric-label-compact">{t("metricDevice")}</div>
-            <strong className="metric-value-compact block truncate">
-              {snapshot.status.deviceLabel}
-            </strong>
-          </div>
+      {/* Metrics */}
+      <div className="metric-stack">
+        <div className="metric-cell">
+          <Mic className="h-3 w-3 shrink-0 text-[color:var(--accent)]" />
+          <div className="metric-label-compact">{t("metricDevice")}</div>
+          <strong className="metric-value-compact ml-auto truncate text-right">
+            {snapshot.status.deviceLabel}
+          </strong>
         </div>
-        <div className="metric-card-compact">
-          <Activity className="h-3.5 w-3.5 text-[color:var(--accent)]" />
-          <div className="min-w-0 flex-1">
+        <div className="metric-row-inner">
+          <div className="metric-cell">
+            <Activity className="h-3 w-3 shrink-0 text-[color:var(--accent)]" />
             <div className="metric-label-compact">{t("metricLevel")}</div>
-            <strong className="metric-value-compact block truncate">
+            <strong className="metric-value-compact ml-auto">
               {snapshot.status.db.toFixed(1)} dB
             </strong>
+          </div>
+          <div className="metric-cell">
+            <div className="status-dot shrink-0" data-tone={vadState.tone} />
+            <div className="metric-label-compact">{t("metricVad")}</div>
+            <strong className="metric-value-compact ml-auto">{vadState.label}</strong>
           </div>
         </div>
       </div>
@@ -187,6 +191,16 @@ export function StatusOverview({
       </section>
     </div>
   );
+}
+
+function getVadState(snapshot: DesktopSnapshot, t: ReturnType<typeof createT>) {
+  if (!snapshot.status.recording) {
+    return { label: t("vadNotStarted"), tone: "idle" as const };
+  }
+  if (snapshot.status.inSpeech) {
+    return { label: t("vadSpeech"), tone: "recording" as const };
+  }
+  return { label: t("vadSilence"), tone: "idle" as const };
 }
 
 function permissionMessage(

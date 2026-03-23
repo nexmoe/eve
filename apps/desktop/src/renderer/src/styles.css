@@ -117,29 +117,49 @@ a {
   50% { box-shadow: 0 0 0 6px rgba(52, 199, 89, 0.06); }
 }
 
-/* Compact metric cards */
-.metric-card-compact {
+/* Metric stack — device full-width, level + vad side-by-side */
+.metric-stack {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.metric-row-inner {
+  display: flex;
+  border-top: 1px solid var(--border);
+}
+
+.metric-row-inner > .metric-cell + .metric-cell {
+  border-left: 1px solid var(--border);
+}
+
+.metric-row-inner > .metric-cell {
+  flex: 1;
+}
+
+.metric-cell {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--surface);
-  padding: 0.7rem 0.875rem;
+  padding: 0.5rem 0.75rem;
+  min-width: 0;
 }
 
 .metric-label-compact {
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.625rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .metric-value-compact {
-  margin-left: auto;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 /* Eyebrow label */
