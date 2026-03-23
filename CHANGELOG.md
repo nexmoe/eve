@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.5 - 2026-03-24
+
+### Fixes
+- Desktop Release: when macOS signing certificates are absent in CI, explicitly disable both `mac.identity` and `pkg.identity` so arm64 release builds skip implicit ad-hoc signing and avoid the `isbinaryfile` crash during packaging.
+
 ## 0.5.4 - 2026-03-23
 
 ### Performance

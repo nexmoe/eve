@@ -48,7 +48,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            build_script: build:mac
+            build_target: --mac
             artifact_name: eve-dist-macos
             artifact_pattern: |
               apps/desktop/dist/*.dmg
@@ -57,7 +57,7 @@ jobs:
               apps/desktop/dist/*.blockmap
               apps/desktop/dist/latest-mac.yml
           - os: windows-latest
-            build_script: build:win
+            build_target: --win
             artifact_name: eve-dist-windows
             artifact_pattern: |
               apps/desktop/dist/*.exe
@@ -92,7 +92,7 @@ jobs:
         shell: bash
         working-directory: apps/desktop
         env:
-          MATRIX_BUILD_SCRIPT: ${{ matrix.build_script }}
+          MATRIX_BUILD_TARGET: ${{ matrix.build_target }}
           _MAC_CSC_LINK: ${{ secrets.CSC_LINK }}
           _MAC_CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
@@ -103,16 +103,21 @@ jobs:
         run: |
           set -euo pipefail
           # When macOS signing secrets are absent, do not export empty CSC_* (electron-builder can
-          # mis-resolve the project path). Use ad-hoc signing instead.
+          # mis-resolve the project path). Also disable implicit ad-hoc signing on arm64 CI builds,
+          # which can fail while scanning bundled runtime resources.
+          extra_args=()
           if [[ "${RUNNER_OS}" == "macOS" ]]; then
             if [[ -n "${_MAC_CSC_LINK:-}" ]]; then
               export CSC_LINK="${_MAC_CSC_LINK}"
               export CSC_KEY_PASSWORD="${_MAC_CSC_KEY_PASSWORD:-}"
             else
               export CSC_IDENTITY_AUTO_DISCOVERY=false
+              extra_args+=("--config.mac.identity=null" "--config.pkg.identity=null")
             fi
           fi
-          bun run "${MATRIX_BUILD_SCRIPT}"
+          bun run build
+          bun run prepare:shared-runtime
+          bunx electron-builder "${MATRIX_BUILD_TARGET}" --publish never "${extra_args[@]}"
 
       - name: Smoke-check build output
         shell: bash
