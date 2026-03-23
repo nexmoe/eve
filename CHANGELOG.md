@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.1 - 2026-03-23
+
+### Performance
+- Cache tray snapshot state and refresh devices/history only when needed to reduce unnecessary work in the desktop main process.
+
 ## 0.5.0 - 2026-03-23
 
 ### Features
