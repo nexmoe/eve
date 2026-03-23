@@ -258,24 +258,6 @@ class SidecarRuntime:
         while not self._quitting:
             status = self.status()
             emit_message({"type": "status", "payload": status})
-            emit_message(
-                {
-                    "type": "waveform",
-                    "payload": {
-                        "bins": status["waveformBins"],
-                        "deviceLabel": status["deviceLabel"],
-                    },
-                }
-            )
-            emit_message(
-                {
-                    "type": "transcript-preview",
-                    "payload": {
-                        "history": status["asrHistory"],
-                        "preview": status["asrPreview"],
-                    },
-                }
-            )
             time.sleep(0.25)
 
     def _sync_live_asr(self, recorder: Any) -> None:

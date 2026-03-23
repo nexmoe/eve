@@ -92,8 +92,17 @@ const getSnapshot = async ({
   return buildSnapshot();
 };
 
-const emitSnapshot = async (snapshot = buildSnapshot()): Promise<void> => {
-  mainWindow?.webContents.send("desktop:snapshot", snapshot);
+const emitSnapshot = async (
+  snapshot = buildSnapshot(),
+  { force = false }: { force?: boolean } = {}
+): Promise<void> => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+  if (!force && !mainWindow.isVisible()) {
+    return;
+  }
+  mainWindow.webContents.send("desktop:snapshot", snapshot);
 };
 
 const toggleMainWindow = (): void => {
@@ -108,6 +117,11 @@ const toggleMainWindow = (): void => {
   positionNearTray(mainWindow, getTrayBounds());
   mainWindow.show();
   mainWindow.focus();
+  void getSnapshot({
+    refreshDevices: true,
+    refreshHistory: true,
+    refreshPermission: true
+  }).then((snapshot) => emitSnapshot(snapshot, { force: true }));
 };
 
 const applyLoginItemSettings = (enabled: boolean): void => {
@@ -196,14 +210,6 @@ const bootstrapDesktop = async (): Promise<void> => {
       setTrayStatus(lastStatus);
       void emitSnapshot(buildSnapshot());
       return;
-    }
-    if (event.type === "transcript-preview") {
-      lastStatus = {
-        ...lastStatus,
-        asrHistory: event.payload.history,
-        asrPreview: event.payload.preview
-      };
-      void emitSnapshot(buildSnapshot());
     }
   });
   await sidecar.start(settings);
