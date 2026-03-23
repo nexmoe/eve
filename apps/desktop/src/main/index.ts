@@ -40,20 +40,17 @@ let lastStatus: RecorderStatusSnapshot = getIdleStatus();
 let cliServer: Awaited<ReturnType<typeof startCliServer>> | null = null;
 let isQuitting = false;
 let isWindowPinned = false;
+let cachedDevices: DesktopSnapshot["devices"] = [];
+let cachedHistory: DesktopSnapshot["history"] = [];
+let cachedPermission = getMicrophonePermissionStatus();
 const isCliMode = process.argv.includes("--cli");
 
-const getSnapshot = async (): Promise<DesktopSnapshot> => {
+const buildSnapshot = (): DesktopSnapshot => {
   const settings = getSettings();
-  const devices = sidecar ? await sidecar.listDevices().catch(() => []) : [];
-  const history = await listRecentRecordings([
-    settings.recording.outputDir,
-    settings.transcribe.inputDir,
-    DEFAULT_SETTINGS.recording.outputDir
-  ]);
   return {
-    devices,
-    history,
-    permission: getMicrophonePermissionStatus(),
+    devices: cachedDevices,
+    history: cachedHistory,
+    permission: cachedPermission,
     settings,
     sidecarReady: sidecar?.getReady() ?? false,
     status: lastStatus,
@@ -61,8 +58,41 @@ const getSnapshot = async (): Promise<DesktopSnapshot> => {
   };
 };
 
-const emitSnapshot = async (): Promise<void> => {
-  const snapshot = await getSnapshot();
+const getSnapshot = async ({
+  refreshDevices = false,
+  refreshHistory = false,
+  refreshPermission = false
+}: {
+  refreshDevices?: boolean;
+  refreshHistory?: boolean;
+  refreshPermission?: boolean;
+} = {}): Promise<DesktopSnapshot> => {
+  const settings = getSettings();
+  const [devices, history] = await Promise.all([
+    refreshDevices
+      ? sidecar?.listDevices().catch(() => cachedDevices) ?? Promise.resolve(cachedDevices)
+      : Promise.resolve(cachedDevices),
+    refreshHistory
+      ? listRecentRecordings([
+          settings.recording.outputDir,
+          settings.transcribe.inputDir,
+          DEFAULT_SETTINGS.recording.outputDir
+        ]).catch(() => cachedHistory)
+      : Promise.resolve(cachedHistory)
+  ]);
+  if (refreshDevices) {
+    cachedDevices = devices;
+  }
+  if (refreshHistory) {
+    cachedHistory = history;
+  }
+  if (refreshPermission) {
+    cachedPermission = getMicrophonePermissionStatus();
+  }
+  return buildSnapshot();
+};
+
+const emitSnapshot = async (snapshot = buildSnapshot()): Promise<void> => {
   mainWindow?.webContents.send("desktop:snapshot", snapshot);
 };
 
@@ -103,7 +133,14 @@ const handleCliCommand = async (args: string[]): Promise<CliResponse> => {
     return { ok: true, payload: { opened: true } };
   }
   if (command.kind === "status") {
-    return { ok: true, payload: await getSnapshot() };
+    return {
+      ok: true,
+      payload: await getSnapshot({
+        refreshDevices: true,
+        refreshHistory: true,
+        refreshPermission: true
+      })
+    };
   }
   if (command.kind === "record-start") {
     await sidecar?.request({ id: randomUUID(), method: "recording.start" });
@@ -157,7 +194,7 @@ const bootstrapDesktop = async (): Promise<void> => {
     if (event.type === "status") {
       lastStatus = event.payload;
       setTrayStatus(lastStatus);
-      void emitSnapshot();
+      void emitSnapshot(buildSnapshot());
       return;
     }
     if (event.type === "transcript-preview") {
@@ -166,10 +203,15 @@ const bootstrapDesktop = async (): Promise<void> => {
         asrHistory: event.payload.history,
         asrPreview: event.payload.preview
       };
-      void emitSnapshot();
+      void emitSnapshot(buildSnapshot());
     }
   });
   await sidecar.start(settings);
+  await getSnapshot({
+    refreshDevices: true,
+    refreshHistory: true,
+    refreshPermission: true
+  });
   applyLoginItemSettings(settings.desktop.launchAtLogin);
   applyTheme(settings.desktop.theme);
   const shouldShow = false;
@@ -237,7 +279,13 @@ const bootstrapDesktop = async (): Promise<void> => {
   initializeAutoUpdates();
 };
 
-ipcMain.handle("desktop:get-snapshot", () => getSnapshot());
+ipcMain.handle("desktop:get-snapshot", () =>
+  getSnapshot({
+    refreshDevices: true,
+    refreshHistory: true,
+    refreshPermission: true
+  })
+);
 ipcMain.handle("desktop:pick-directory", async (_event, defaultPath?: string) => {
   const options: OpenDialogOptions = {
     defaultPath: defaultPath && defaultPath.trim().length > 0 ? defaultPath : dirname(process.cwd()),
@@ -254,7 +302,8 @@ ipcMain.handle("desktop:open-recording-folder", async (_event, target: string) =
 });
 ipcMain.handle("desktop:request-permission", async () => {
   const permission = await requestMicrophonePermission();
-  await emitSnapshot();
+  cachedPermission = permission;
+  await emitSnapshot(buildSnapshot());
   return permission;
 });
 ipcMain.handle("desktop:save-settings", async (_event, settings: AppSettings) => {
@@ -262,17 +311,22 @@ ipcMain.handle("desktop:save-settings", async (_event, settings: AppSettings) =>
   applyLoginItemSettings(saved.desktop.launchAtLogin);
   applyTheme(saved.desktop.theme);
   await sidecar?.applySettings(saved);
-  await emitSnapshot();
+  await emitSnapshot(
+    await getSnapshot({
+      refreshDevices: true,
+      refreshHistory: true
+    })
+  );
   return saved;
 });
 ipcMain.handle("desktop:open-permission-settings", openMicrophonePrivacySettings);
 ipcMain.handle("desktop:start-recording", async () => {
   await sidecar?.request({ id: randomUUID(), method: "recording.start" });
-  return getSnapshot();
+  return getSnapshot({ refreshHistory: true });
 });
 ipcMain.handle("desktop:stop-recording", async () => {
   await sidecar?.request({ id: randomUUID(), method: "recording.stop" });
-  return getSnapshot();
+  return getSnapshot({ refreshHistory: true });
 });
 ipcMain.handle("desktop:run-transcribe", async (_event, inputDir: string) => {
   await sidecar?.request({
@@ -280,13 +334,13 @@ ipcMain.handle("desktop:run-transcribe", async (_event, inputDir: string) => {
     method: "transcribe.run",
     params: { inputDir }
   });
-  await emitSnapshot();
-  return getSnapshot();
+  return getSnapshot({ refreshHistory: true });
 });
 ipcMain.handle("desktop:set-window-pinned", async (_event, pinned: boolean) => {
   applyWindowPinnedState(Boolean(pinned));
-  await emitSnapshot();
-  return getSnapshot();
+  const snapshot = buildSnapshot();
+  await emitSnapshot(snapshot);
+  return snapshot;
 });
 
 if (!isCliMode && !app.requestSingleInstanceLock()) {
