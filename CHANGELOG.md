@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.0 - 2026-03-23
+
+### Features
+- Introduce the Electron desktop client with tray UI, sidecar runtime, electron-builder packaging, and tests; add a Bun workspace root, `packages/shared`, and a desktop-release GitHub Action in place of the previous installer workflow.
+- Show VAD state (not started / speech / silence) in the status overview with a tone dot next to device and level metrics; refactor metrics into a stacked layout with tightened typography; add English and Chinese strings for VAD labels.
+
 ## 0.4.3 - 2026-03-19
 
 ### Fixes
