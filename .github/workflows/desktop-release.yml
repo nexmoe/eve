@@ -89,16 +89,30 @@ jobs:
         run: chmod +x apps/desktop/resources/bin/eve
 
       - name: Build desktop package
+        shell: bash
         working-directory: apps/desktop
-        run: bun run ${{ matrix.build_script }}
         env:
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          MATRIX_BUILD_SCRIPT: ${{ matrix.build_script }}
+          _MAC_CSC_LINK: ${{ secrets.CSC_LINK }}
+          _MAC_CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          set -euo pipefail
+          # When macOS signing secrets are absent, do not export empty CSC_* (electron-builder can
+          # mis-resolve the project path). Use ad-hoc signing instead.
+          if [[ "${RUNNER_OS}" == "macOS" ]]; then
+            if [[ -n "${_MAC_CSC_LINK:-}" ]]; then
+              export CSC_LINK="${_MAC_CSC_LINK}"
+              export CSC_KEY_PASSWORD="${_MAC_CSC_KEY_PASSWORD:-}"
+            else
+              export CSC_IDENTITY_AUTO_DISCOVERY=false
+            fi
+          fi
+          bun run "${MATRIX_BUILD_SCRIPT}"
 
       - name: Smoke-check build output
         shell: bash
