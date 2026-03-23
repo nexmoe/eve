@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.3 - 2026-03-23
+
+### Fixes
+- Desktop Release: fix macOS `electron-builder` failure when Apple signing secrets are not configured by skipping empty `CSC_*` exports and using ad-hoc signing (`CSC_IDENTITY_AUTO_DISCOVERY=false`).
+
 ## 0.5.2 - 2026-03-23
 
 ### Fixes
