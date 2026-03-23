@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.4 - 2026-03-23
+
+### Performance
+- Reduce desktop IPC: skip snapshot emission while the main window is hidden or destroyed; refresh with a full snapshot when the window becomes visible again.
+- Drop redundant waveform and transcript-preview messages from the sidecar status loop (already covered by the status payload).
+
 ## 0.5.3 - 2026-03-23
 
 ### Fixes
