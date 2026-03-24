@@ -28,8 +28,11 @@ extraResources:
     filter:
       - '**/*'
       - '!**/__pycache__/**'
+      - '!**/docs/**'
       - '!**/*.pyc'
       - '!**/*.pyo'
+      - '!**/test/**'
+      - '!**/tests/**'
   - from: vendor/eve-sidecar
     to: vendor/eve-sidecar
     filter:

@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.10 - 2026-03-24
+
+### Fixes
+- Normalize bundled shared-Python symlinks, prune development-only runtime files, and exclude non-runtime test/docs resources so macOS desktop release builds can finish packaging without hitting the `isbinaryfile` crash during signing.
+
 ## 0.5.9 - 2026-03-24
 
 ### Fixes
