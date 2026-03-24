@@ -110,6 +110,11 @@ jobs:
           # build, but the resulting macOS artifacts are unsigned and not notarized.
           extra_args=()
           if [[ "${RUNNER_OS}" == "macOS" ]]; then
+            ENTITLEMENTS_PATH="$PWD/build/entitlements.mac.plist"
+            extra_args+=(
+              "--config.mac.entitlements=$ENTITLEMENTS_PATH"
+              "--config.mac.entitlementsInherit=$ENTITLEMENTS_PATH"
+            )
             if [[ -n "${MAC_CERT_P12_BASE64:-}" ]] && [[ -n "${MAC_CERT_P12_PASSWORD:-}" ]]; then
               CERT_PATH="$RUNNER_TEMP/mac_cert.p12"
               KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain"

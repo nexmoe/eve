@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.13 - 2026-03-24
+
+### Fixes
+- Pass absolute macOS entitlements paths to electron-builder in CI so codesign can always read the plist during release signing, matching the locally verified invocation.
+
 ## 0.5.12 - 2026-03-24
 
 ### Fixes
