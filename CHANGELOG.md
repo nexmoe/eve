@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.11 - 2026-03-24
+
+### Fixes
+- Patch the CI-installed `isbinaryfile` dependency before macOS packaging so electron-builder no longer crashes inside the upstream protobuf parser when signing the desktop app bundle.
+
 ## 0.5.10 - 2026-03-24
 
 ### Fixes

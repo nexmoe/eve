@@ -84,6 +84,9 @@ jobs:
       - name: Install workspace dependencies
         run: bun install --frozen-lockfile
 
+      - name: Patch isbinaryfile
+        run: node ./scripts/patch-isbinaryfile.mjs
+
       - name: Mark POSIX wrapper executable
         if: runner.os != 'Windows'
         run: chmod +x apps/desktop/resources/bin/eve
