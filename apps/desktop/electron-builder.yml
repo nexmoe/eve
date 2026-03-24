@@ -44,6 +44,8 @@ mac:
   entitlementsInherit: build/entitlements.mac.plist
   icon: resources/icon.icns
   notarize: true
+  signIgnore:
+    - '/Resources/vendor/shared-python-runtime/runtime/lib/python3\.12/site-packages/.*'
   target:
     - target: dmg
     - target: zip

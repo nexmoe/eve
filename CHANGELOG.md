@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.9 - 2026-03-24
+
+### Fixes
+- Avoid signing the bundled shared Python `site-packages` tree during macOS packaging so the desktop release workflow no longer crashes inside `isbinaryfile` while scanning runtime resources.
+
 ## 0.5.8 - 2026-03-24
 
 ### Fixes
