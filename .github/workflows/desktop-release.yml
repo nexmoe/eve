@@ -142,7 +142,11 @@ jobs:
           fi
           bun run build
           bun run prepare:shared-runtime
-          bunx electron-builder "${MATRIX_BUILD_TARGET}" --publish never "${extra_args[@]}"
+          if (( ${#extra_args[@]} )); then
+            bunx electron-builder "${MATRIX_BUILD_TARGET}" --publish never "${extra_args[@]}"
+          else
+            bunx electron-builder "${MATRIX_BUILD_TARGET}" --publish never
+          fi
 
       - name: Smoke-check build output
         shell: bash

@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.8 - 2026-03-24
+
+### Fixes
+- Update the desktop release workflow to use a temporary macOS keychain with `MAC_CERT_P12_BASE64`, enable notarization, avoid unsigned macOS ad-hoc signing, and fix the empty-array shell expansion that broke the latest release run.
+
 ## 0.5.7 - 2026-03-24
 
 ### Fixes
