@@ -53,7 +53,11 @@ const removableRuntimeEntryPrefixes = [
   "uvicorn",
   "werkzeug"
 ];
-const removableRuntimeRelativePaths = ["qwen_asr/cli"];
+const removableRuntimeRelativePaths = [
+  "qwen_asr/cli",
+  "torch/include",
+  "torch/share"
+];
 const removableBinEntries = process.platform === "win32"
   ? new Set(["activate.bat", "deactivate.bat", "pydoc.bat"])
   : new Set([

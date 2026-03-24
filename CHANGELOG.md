@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.12 - 2026-03-24
+
+### Fixes
+- Remove bundled `torch/include` and `torch/share` from the shared Python runtime so macOS release signing no longer exhausts the file descriptor limit while scanning the app bundle.
+
 ## 0.5.11 - 2026-03-24
 
 ### Fixes

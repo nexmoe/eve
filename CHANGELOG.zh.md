@@ -2,6 +2,11 @@
 
 本文档记录本项目的重要变更。
 
+## 0.5.12 - 2026-03-24
+
+### 修复
+- 从共享 Python runtime 中移除 `torch/include` 与 `torch/share`，避免 macOS 发布签名扫描 app bundle 时耗尽文件句柄上限。
+
 ## 0.5.11 - 2026-03-24
 
 ### 修复
