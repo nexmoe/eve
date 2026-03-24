@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.7 - 2026-03-24
+
+### Fixes
+- Refactor macOS signing in CI to use a temporary keychain and enable notarization in the desktop release workflow.
+
 ## 0.5.6 - 2026-03-24
 
 ### Fixes
