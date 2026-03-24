@@ -2,6 +2,11 @@
 
 本文档记录本项目的重要变更。
 
+## 0.5.14 - 2026-03-24
+
+### 修复
+- 为 macOS 桌面签名接入自定义 `electron-builder` sign hook：对 `.pak` 资源文件去掉会触发 CI codesign 失败的 entitlements，同时保持应用级 hardened runtime 签名；并将共享 Python runtime 的打包过滤规则补齐到 `Linkhoard` 已验证的范围。
+
 ## 0.5.13 - 2026-03-24
 
 ### 修复

@@ -33,6 +33,36 @@ extraResources:
       - '!**/*.pyo'
       - '!**/test/**'
       - '!**/tests/**'
+      - '!python/**/ensurepip/**'
+      - '!python/**/idlelib/**'
+      - '!python/**/tkinter/**'
+      - '!python/**/turtledemo/**'
+      - '!python/**/site-packages/pip/**'
+      - '!python/**/site-packages/pip-*.dist-info/**'
+      - '!python/**/site-packages/setuptools/**'
+      - '!python/**/site-packages/setuptools-*.dist-info/**'
+      - '!runtime/**/fastapi/**'
+      - '!runtime/**/fastapi-*.dist-info/**'
+      - '!runtime/**/flask/**'
+      - '!runtime/**/flask-*.dist-info/**'
+      - '!runtime/**/gradio/**'
+      - '!runtime/**/gradio-*.dist-info/**'
+      - '!runtime/**/gradio_client/**'
+      - '!runtime/**/gradio_client-*.dist-info/**'
+      - '!runtime/**/pip/**'
+      - '!runtime/**/pip-*.dist-info/**'
+      - '!runtime/**/setuptools/**'
+      - '!runtime/**/setuptools-*.dist-info/**'
+      - '!runtime/**/uvicorn/**'
+      - '!runtime/**/uvicorn-*.dist-info/**'
+      - '!runtime/**/werkzeug/**'
+      - '!runtime/**/werkzeug-*.dist-info/**'
+      - '!runtime/Lib/site-packages/qwen_asr/cli/**'
+      - '!runtime/lib/python3.12/site-packages/qwen_asr/cli/**'
+      - '!runtime/Lib/site-packages/torch/include/**'
+      - '!runtime/lib/python3.12/site-packages/torch/include/**'
+      - '!runtime/Lib/site-packages/torch/share/**'
+      - '!runtime/lib/python3.12/site-packages/torch/share/**'
   - from: vendor/eve-sidecar
     to: vendor/eve-sidecar
     filter:
@@ -45,6 +75,7 @@ mac:
   category: public.app-category.productivity
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  sign: ./apps/desktop/scripts/macos-sign.cjs
   icon: resources/icon.icns
   notarize: true
   signIgnore:

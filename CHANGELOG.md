@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.14 - 2026-03-24
+
+### Fixes
+- Route macOS desktop signing through a custom `electron-builder` sign hook that strips entitlements from `.pak` resource blobs while keeping the app-level hardened-runtime signing flow intact, and align the bundled shared Python runtime filters with the proven `Linkhoard` exclusions used during release packaging.
+
 ## 0.5.13 - 2026-03-24
 
 ### Fixes
