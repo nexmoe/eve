@@ -2,6 +2,11 @@
 
 本文档记录本项目的重要变更。
 
+## 0.5.15 - 2026-03-24
+
+### 修复
+- 修正 macOS `electron-builder` 自定义 sign hook 的脚本路径，确保从 `apps/desktop` 启动的发布构建能在 CI 中正确加载签名脚本，不再解析出重复的 `apps/desktop/apps/desktop/...` 路径。
+
 ## 0.5.14 - 2026-03-24
 
 ### 修复

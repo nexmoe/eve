@@ -75,7 +75,7 @@ mac:
   category: public.app-category.productivity
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-  sign: ./apps/desktop/scripts/macos-sign.cjs
+  sign: ./scripts/macos-sign.cjs
   icon: resources/icon.icns
   notarize: true
   signIgnore:

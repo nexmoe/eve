@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.15 - 2026-03-24
+
+### Fixes
+- Correct the custom macOS `electron-builder` sign-hook path so release builds launched from `apps/desktop` can load the signing script in CI instead of resolving a duplicated `apps/desktop/apps/desktop/...` path.
+
 ## 0.5.14 - 2026-03-24
 
 ### Fixes
