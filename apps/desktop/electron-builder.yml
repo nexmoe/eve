@@ -43,7 +43,7 @@ mac:
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   icon: resources/icon.icns
-  notarize: false
+  notarize: true
   target:
     - target: dmg
     - target: zip

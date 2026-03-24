@@ -86,16 +86,17 @@ GitHub Actions 工作流：`.github/workflows/desktop-release.yml`
 
 - `checks`：类型检查 + JS 测试 + Python sidecar 测试
 - `build`：macOS + Windows 安装包
-- `publish`：`desktop-v*` tag 触发发布安装包、自动更新元数据与校验和
+- `publish`：`v*` tag 触发发布安装包、自动更新元数据与校验和
 
-签名 secrets 为可选，未配置时仍可构建未签名包。
+签名 secrets 为可选，未配置时仍可构建未签名包，但 macOS 想在其他机器上正常打开仍需要签名和 notarization。
 
 如需接入 macOS 签名，在 GitHub Actions 中配置以下 secrets：
 
-- `MACOS_CERTIFICATE_P12_BASE64`
-- `MACOS_CERTIFICATE_PASSWORD`
-- `MACOS_CODESIGN_IDENTITY`
-- `MACOS_INSTALLER_IDENTITY`
+- `MAC_CERT_P12_BASE64`
+- `MAC_CERT_P12_PASSWORD`
+- `APPLE_API_KEY_P8_BASE64`
+- `APPLE_API_KEY_ID`
+- `APPLE_API_ISSUER`
 
 ## ASR 依赖
 

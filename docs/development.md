@@ -86,16 +86,17 @@ GitHub Actions workflow: `.github/workflows/desktop-release.yml`
 
 - `checks`: typecheck + JS tests + Python sidecar tests
 - `build`: macOS + Windows packages
-- `publish`: `desktop-v*` tags release installers, auto-update metadata, and checksum artifacts
+- `publish`: `v*` tags release installers, auto-update metadata, and checksum artifacts
 
-Signing secrets are optional. Unsigned builds still work when secrets are absent.
+Signing secrets are optional. Unsigned builds still work when secrets are absent, but macOS builds need signing plus notarization to open cleanly on other machines.
 
 To enable macOS signing, configure these GitHub Actions secrets:
 
-- `MACOS_CERTIFICATE_P12_BASE64`
-- `MACOS_CERTIFICATE_PASSWORD`
-- `MACOS_CODESIGN_IDENTITY`
-- `MACOS_INSTALLER_IDENTITY`
+- `MAC_CERT_P12_BASE64`
+- `MAC_CERT_P12_PASSWORD`
+- `APPLE_API_KEY_P8_BASE64`
+- `APPLE_API_KEY_ID`
+- `APPLE_API_ISSUER`
 
 ## ASR Dependencies
 
