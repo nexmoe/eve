@@ -2,7 +2,7 @@
 
 const path = require("node:path");
 const repositoryRoot = path.resolve(__dirname, "../../..");
-const { sign } = require(path.join(
+const { signApp } = require(path.join(
   repositoryRoot,
   "node_modules/.bun/node_modules/@electron/osx-sign"
 ));
@@ -17,7 +17,7 @@ const shouldStripEntitlements = (filePath) => {
 module.exports = async function macosSign(configuration) {
   const originalOptionsForFile = configuration.optionsForFile;
 
-  await sign({
+  await signApp({
     ...configuration,
     optionsForFile(filePath) {
       const perFileOptions = originalOptionsForFile
