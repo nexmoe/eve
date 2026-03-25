@@ -52,7 +52,6 @@ jobs:
             artifact_name: eve-dist-macos
             artifact_pattern: |
               apps/desktop/dist/*.dmg
-              apps/desktop/dist/*.pkg
               apps/desktop/dist/*.zip
               apps/desktop/dist/*.blockmap
               apps/desktop/dist/latest-mac.yml
@@ -191,7 +190,6 @@ jobs:
         with:
           files: |
             dist/*.dmg
-            dist/*.pkg
             dist/*.zip
             dist/*.exe
             dist/*.blockmap

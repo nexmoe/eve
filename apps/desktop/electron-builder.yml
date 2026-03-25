@@ -81,18 +81,11 @@ mac:
   target:
     - target: dmg
     - target: zip
-    - target: pkg
   extendInfo:
     - CFBundleDisplayName: eve
     - CFBundleName: eve
     - LSUIElement: true
     - NSMicrophoneUsageDescription: eve 需要麦克风权限来完成长时录音与实时转写。
-pkg:
-  allowAnywhere: false
-  allowCurrentUserHome: false
-  allowRootDirectory: true
-  artifactName: ${productName}-${version}-installer.${ext}
-  installLocation: /Applications
 win:
   executableName: eve
   icon: resources/icon.ico
