@@ -15,6 +15,9 @@ dist/
 build/
 editable_install/
 .generated/
+!apps/desktop/build/
+!apps/desktop/build/entitlements.mac.plist
+!apps/desktop/build/entitlements.mac.inherit.plist
 
 # Virtual environments
 .venv/
