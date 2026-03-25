@@ -74,7 +74,7 @@ mac:
   artifactName: ${productName}-${version}-installer.${ext}
   category: public.app-category.productivity
   entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
   sign: ./scripts/macos-sign.cjs
   icon: resources/icon.icns
   notarize: true

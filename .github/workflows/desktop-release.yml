@@ -111,9 +111,10 @@ jobs:
           extra_args=()
           if [[ "${RUNNER_OS}" == "macOS" ]]; then
             ENTITLEMENTS_PATH="$PWD/build/entitlements.mac.plist"
+            ENTITLEMENTS_INHERIT_PATH="$PWD/build/entitlements.mac.inherit.plist"
             extra_args+=(
               "--config.mac.entitlements=$ENTITLEMENTS_PATH"
-              "--config.mac.entitlementsInherit=$ENTITLEMENTS_PATH"
+              "--config.mac.entitlementsInherit=$ENTITLEMENTS_INHERIT_PATH"
             )
             if [[ -n "${MAC_CERT_P12_BASE64:-}" ]] && [[ -n "${MAC_CERT_P12_PASSWORD:-}" ]]; then
               CERT_PATH="$RUNNER_TEMP/mac_cert.p12"
