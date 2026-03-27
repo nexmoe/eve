@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 export const createMainWindow = (showOnReady: boolean): BrowserWindow => {
   const isMac = process.platform === "darwin";
-  const useGlassWindow = isMac && !app.isPackaged;
+  const useGlassWindow = isMac;
 
   const windowRef = new BrowserWindow({
     width: 420,

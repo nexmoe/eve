@@ -1,4 +1,5 @@
-import { nativeTheme } from "electron";
+import { app, nativeTheme } from "electron";
+import { isAbsolute, join } from "node:path";
 import Store from "electron-store";
 import {
   type AppLanguage,
@@ -43,6 +44,10 @@ const normalizeString = (value: unknown, fallback: string): string => {
   return typeof value === "string" && value.trim().length > 0 ? value : fallback;
 };
 
+const getDefaultRecordingOutputDir = (): string => {
+  return join(app.getPath("documents"), "Eve Recorder");
+};
+
 const VALID_THEMES: ThemeMode[] = ["light", "dark", "system"];
 const VALID_LANGUAGES: AppLanguage[] = ["system", "zh-CN", "en-US"];
 const normalizeTheme = (value: unknown): ThemeMode => {
@@ -59,6 +64,10 @@ const normalizeLanguage = (value: unknown): AppLanguage => {
 
 export const getSettings = (): AppSettings => {
   const stored = desktopStore.get("settings");
+  const normalizedOutputDir = normalizeString(
+    stored?.recording?.outputDir,
+    getDefaultRecordingOutputDir()
+  );
   return {
     desktop: {
       hideWindowOnClose: true,
@@ -100,10 +109,9 @@ export const getSettings = (): AppSettings => {
         stored?.recording?.excludeDeviceKeywords,
         DEFAULT_SETTINGS.recording.excludeDeviceKeywords
       ),
-      outputDir: normalizeString(
-        stored?.recording?.outputDir,
-        DEFAULT_SETTINGS.recording.outputDir
-      ),
+      outputDir: isAbsolute(normalizedOutputDir)
+        ? normalizedOutputDir
+        : getDefaultRecordingOutputDir(),
       segmentMinutes: normalizeNumber(
         stored?.recording?.segmentMinutes,
         DEFAULT_SETTINGS.recording.segmentMinutes

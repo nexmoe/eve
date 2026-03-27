@@ -201,6 +201,16 @@ const finalizeRecordingBeforeQuit = async (): Promise<void> => {
   await engine.stopRecording();
 };
 
+const ensureMicrophonePermission = async (): Promise<void> => {
+  if (isE2E || process.platform !== "darwin") {
+    return;
+  }
+  if (cachedPermission.state !== "not-determined") {
+    return;
+  }
+  cachedPermission = await requestMicrophonePermission();
+};
+
 const bootstrapDesktop = async (): Promise<void> => {
   if (app.isPackaged) {
     initializeMainLogger();
@@ -216,6 +226,7 @@ const bootstrapDesktop = async (): Promise<void> => {
   });
   engine.applySettings(settings);
   lastStatus = engine.getStatus();
+  await ensureMicrophonePermission();
   await getSnapshot({
     refreshDevices: true,
     refreshHistory: true,
