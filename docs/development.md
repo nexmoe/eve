@@ -5,26 +5,23 @@
 ## Project Structure
 
 ```text
-apps/desktop        Electron main/preload/renderer, tray, packaging, CI entry
-packages/shared     Shared TypeScript contracts for desktop + renderer
-src/eve             Python recording / VAD / ASR core, used as sidecar runtime
+apps/desktop        Electron main/preload/renderer, tray, packaging
+packages/shared     Shared TypeScript contracts for main + renderer
 ```
 
 ## Requirements
 
-- Python >= 3.12
-- [uv](https://docs.astral.sh/uv/) (Python dependency management)
-- [Bun](https://bun.sh/) >= 1.3.2 (frontend and desktop)
+- [Bun](https://bun.sh/) >= 1.3.2
+- `ffmpeg` for FLAC output and non-WAV transcription
 
 ```bash
-brew install uv bun
+brew install bun ffmpeg
 ```
 
-## Install Dependencies
+## Install
 
 ```bash
 bun install
-uv sync
 ```
 
 ## Development
@@ -33,29 +30,16 @@ uv sync
 bun run dev:desktop
 ```
 
-The Electron app starts from `apps/desktop` and spawns the Python sidecar automatically.
+The app is Electron-only. There is no Python runtime or CLI sidecar anymore.
 
-You can also run the Python CLI directly:
-
-```bash
-uv run eve
-```
-
-To start the legacy tray mode:
-
-```bash
-uv run eve desktop
-```
-
-## Typecheck and Test
+## Checks
 
 ```bash
 bun run typecheck
 bun run test
-uv run --with pytest pytest apps/desktop/vendor/eve-sidecar/tests
 ```
 
-## Build Desktop Packages
+## Build Packages
 
 ```bash
 bun run build
@@ -69,51 +53,8 @@ Build targets:
 - macOS: `.dmg`, `.zip`, `.pkg`
 - Windows: NSIS `.exe`
 
-### Python Sidecar Runtime
+## Notes
 
-The desktop app prepares a bundled Python runtime before packaging:
-
-```bash
-cd apps/desktop
-bun run prepare:shared-runtime
-```
-
-The runtime is written to `apps/desktop/.generated/shared-python-runtime`. Production packages bundle this runtime so end users do not need system Python.
-
-## CI/CD
-
-GitHub Actions workflow: `.github/workflows/desktop-release.yml`
-
-- `checks`: typecheck + JS tests + Python sidecar tests
-- `build`: macOS + Windows packages
-- `publish`: `v*` tags release installers, auto-update metadata, and checksum artifacts
-
-Signing secrets are optional. Unsigned builds still work when secrets are absent, but macOS builds need signing plus notarization to open cleanly on other machines.
-
-To enable macOS signing, configure these GitHub Actions secrets:
-
-- `MAC_CERT_P12_BASE64`
-- `MAC_CERT_P12_PASSWORD`
-- `APPLE_API_KEY_P8_BASE64`
-- `APPLE_API_KEY_ID`
-- `APPLE_API_ISSUER`
-
-## ASR Dependencies
-
-ASR transcription is optional and included in the default install. Only required for real-time transcription or `eve transcribe`.
-
-With ASR disabled, only recording runs — no model is loaded. Use `eve transcribe` later to generate `.json` transcription results.
-
-### Resource Recommendations
-
-- Recording only (`--disable-asr`): `2GB+` RAM, dual-core CPU
-- Recording + real-time transcription (CPU): `8GB+` RAM (minimum `4GB`), 4+ cores recommended
-- Recording + real-time transcription (GPU/NPU): `8GB+` RAM, significantly reduces CPU load
-- Disk space: at least `10GB` free for long-term archiving
-
-## Notes for Contributors
-
+- Models download on first use into the app user-data directory.
+- `sherpa-onnx-node` is bundled with the Electron app and unpacked for production builds.
 - New source files should stay under 500 lines.
-- Do not reintroduce `flet`, `pystray`, or the old PyInstaller installer path.
-- Electron is the source of truth for settings and permissions.
-- Python is execution infrastructure for audio work, not the desktop shell.

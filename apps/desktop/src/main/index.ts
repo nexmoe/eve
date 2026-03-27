@@ -1,12 +1,13 @@
-import { randomUUID } from "node:crypto";
-import { spawn } from "node:child_process";
 import { dirname } from "node:path";
 import icon from "../../resources/icon.png?asset";
+import log from "electron-log/main";
 import { app, type BrowserWindow, dialog, ipcMain, shell, type OpenDialogOptions } from "electron";
 import {
   DEFAULT_SETTINGS,
+  DEFAULT_STATUS,
   type AppSettings,
   type DesktopSnapshot,
+  type DeviceInfo,
   type RecorderStatusSnapshot
 } from "@eve/shared";
 import {
@@ -14,11 +15,10 @@ import {
   openMicrophonePrivacySettings,
   requestMicrophonePermission
 } from "./permissions";
-import { parseCliCommand } from "./cli-parser";
-import { SidecarManager } from "./sidecar-manager";
+import { DesktopEngine } from "./desktop-engine";
+import { TestDesktopEngine } from "./test-engine";
 import {
   applyTheme,
-  getIdleStatus,
   getSettings,
   setSettings
 } from "./store";
@@ -31,28 +31,51 @@ import {
   setTrayStatus
 } from "./tray";
 import { createMainWindow, positionNearTray } from "./window";
-import { sendCliCommand, startCliServer, type CliResponse } from "./command-server";
 import { initializeAutoUpdates, shutdownAutoUpdates } from "./updater";
 
+const isE2E = process.env.EVE_E2E_TEST === "1";
+
+type DesktopEngineLike = Pick<
+  DesktopEngine,
+  | "applySettings"
+  | "getDevices"
+  | "getReady"
+  | "getStatus"
+  | "updateDevices"
+  | "reportCaptureError"
+  | "startRecording"
+  | "stopRecording"
+  | "runTranscribe"
+  | "pushAudioChunk"
+>;
+
 let mainWindow: BrowserWindow | null = null;
-let sidecar: SidecarManager | null = null;
-let lastStatus: RecorderStatusSnapshot = getIdleStatus();
-let cliServer: Awaited<ReturnType<typeof startCliServer>> | null = null;
+let engine: DesktopEngineLike | null = null;
+let lastStatus: RecorderStatusSnapshot = DEFAULT_STATUS;
 let isQuitting = false;
 let isWindowPinned = false;
+let quitAfterRecordingFinalize = false;
 let cachedDevices: DesktopSnapshot["devices"] = [];
 let cachedHistory: DesktopSnapshot["history"] = [];
-let cachedPermission = getMicrophonePermissionStatus();
-const isCliMode = process.argv.includes("--cli");
+let cachedPermission = isE2E
+  ? {
+      message: "E2E microphone permission granted.",
+      state: "authorized" as const,
+      supported: true
+    }
+  : getMicrophonePermissionStatus();
+
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : "Failed to start recording.";
 
 const buildSnapshot = (): DesktopSnapshot => {
   const settings = getSettings();
   return {
     devices: cachedDevices,
+    engineReady: engine?.getReady() ?? false,
     history: cachedHistory,
     permission: cachedPermission,
     settings,
-    sidecarReady: sidecar?.getReady() ?? false,
     status: lastStatus,
     windowPinned: isWindowPinned
   };
@@ -70,12 +93,11 @@ const getSnapshot = async ({
   const settings = getSettings();
   const [devices, history] = await Promise.all([
     refreshDevices
-      ? sidecar?.listDevices().catch(() => cachedDevices) ?? Promise.resolve(cachedDevices)
+      ? Promise.resolve(engine?.getDevices() ?? cachedDevices)
       : Promise.resolve(cachedDevices),
     refreshHistory
       ? listRecentRecordings([
           settings.recording.outputDir,
-          settings.transcribe.inputDir,
           DEFAULT_SETTINGS.recording.outputDir
         ]).catch(() => cachedHistory)
       : Promise.resolve(cachedHistory)
@@ -125,10 +147,22 @@ const toggleMainWindow = (): void => {
 };
 
 const applyLoginItemSettings = (enabled: boolean): void => {
-  app.setLoginItemSettings({
-    enabled,
-    openAsHidden: true
-  });
+  if (isE2E) {
+    return;
+  }
+  if (!app.isPackaged) {
+    log.info("[eve] skipped login item update in development");
+    setTrayLaunchAtLogin(enabled);
+    return;
+  }
+  try {
+    app.setLoginItemSettings({
+      enabled,
+      openAsHidden: true
+    });
+  } catch (error) {
+    log.warn("[eve] failed to update login item settings", error);
+  }
   setTrayLaunchAtLogin(enabled);
 };
 
@@ -137,82 +171,39 @@ const applyWindowPinnedState = (pinned: boolean): void => {
   mainWindow?.setAlwaysOnTop(pinned, pinned ? "floating" : "normal");
 };
 
-const handleCliCommand = async (args: string[]): Promise<CliResponse> => {
-  const command = parseCliCommand(args);
-  if (!command) {
-    return { error: `Unknown CLI command: ${args.join(" ")}`, ok: false };
+const startRecording = async (): Promise<void> => {
+  if (!engine) {
+    throw new Error("Recorder engine is unavailable.");
   }
-  if (command.kind === "open") {
-    toggleMainWindow();
-    return { ok: true, payload: { opened: true } };
-  }
-  if (command.kind === "status") {
-    return {
-      ok: true,
-      payload: await getSnapshot({
-        refreshDevices: true,
-        refreshHistory: true,
-        refreshPermission: true
-      })
-    };
-  }
-  if (command.kind === "record-start") {
-    await sidecar?.request({ id: randomUUID(), method: "recording.start" });
-    return { ok: true, payload: { started: true } };
-  }
-  if (command.kind === "record-stop") {
-    await sidecar?.request({ id: randomUUID(), method: "recording.stop" });
-    return { ok: true, payload: { stopped: true } };
-  }
-  if (command.kind === "transcribe-run") {
-    const payload = await sidecar?.request({
-      id: randomUUID(),
-      method: "transcribe.run",
-      params: {
-        force: command.force,
-        inputDir: command.inputDir,
-        limit: command.limit
-      }
-    });
-    return { ok: true, payload };
-  }
-  return { error: `Unknown CLI command: ${args.join(" ")}`, ok: false };
+  await engine.startRecording();
 };
 
-const startCliClient = async (args: string[]): Promise<number> => {
-  try {
-    const response = await sendCliCommand({ args });
-    process.stdout.write(`${JSON.stringify(response.payload ?? response, null, 2)}\n`);
-    return response.ok ? 0 : 1;
-  } catch {
-    const executable = process.execPath;
-    const child = spawn(executable, ["--silent-startup"], {
-      detached: true,
-      stdio: "ignore"
-    });
-    child.unref();
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    const response = await sendCliCommand({ args });
-    process.stdout.write(`${JSON.stringify(response.payload ?? response, null, 2)}\n`);
-    return response.ok ? 0 : 1;
+const captureStartRecordingError = (error: unknown): void => {
+  engine?.reportCaptureError(errorMessage(error));
+};
+
+const finalizeRecordingBeforeQuit = async (): Promise<void> => {
+  if (!engine || !lastStatus.recording) {
+    return;
   }
+  await engine.stopRecording();
 };
 
 const bootstrapDesktop = async (): Promise<void> => {
-  if (process.platform === "darwin") {
+  if (app.isPackaged) {
+    log.initialize();
+  }
+  if (process.platform === "darwin" && !isE2E) {
     app.dock?.hide();
   }
   const settings = getSettings() ?? DEFAULT_SETTINGS;
-  sidecar = new SidecarManager();
-  sidecar.onEvent((event) => {
-    if (event.type === "status") {
-      lastStatus = event.payload;
-      setTrayStatus(lastStatus);
-      void emitSnapshot(buildSnapshot());
-      return;
-    }
+  engine = new (isE2E ? TestDesktopEngine : DesktopEngine)((status) => {
+    lastStatus = status;
+    setTrayStatus(lastStatus);
+    void emitSnapshot(buildSnapshot(), { force: true });
   });
-  await sidecar.start(settings);
+  engine.applySettings(settings);
+  lastStatus = engine.getStatus();
   await getSnapshot({
     refreshDevices: true,
     refreshHistory: true,
@@ -220,7 +211,7 @@ const bootstrapDesktop = async (): Promise<void> => {
   });
   applyLoginItemSettings(settings.desktop.launchAtLogin);
   applyTheme(settings.desktop.theme);
-  const shouldShow = false;
+  const shouldShow = isE2E;
   mainWindow = createMainWindow(shouldShow);
   if (process.env.EVE_SMOKE_TEST === "1") {
     mainWindow.webContents.once("did-finish-load", () => {
@@ -251,38 +242,49 @@ const bootstrapDesktop = async (): Promise<void> => {
     mainWindow?.hide();
   });
   mainWindow.on("blur", () => {
-    if (!isQuitting && !isWindowPinned) {
+    if (!isE2E && !isQuitting && !isWindowPinned) {
       mainWindow?.hide();
     }
   });
-  initializeTray({
-    iconPath: icon,
-    onOpen: toggleMainWindow,
-    onQuit: () => app.quit(),
-    onStartRecording: () => {
-      void sidecar?.request({ id: randomUUID(), method: "recording.start" });
-    },
-    onStopRecording: () => {
-      void sidecar?.request({ id: randomUUID(), method: "recording.stop" });
-    },
-    onToggleLaunchAtLogin: () => {
-      const nextSettings: AppSettings = {
-        ...getSettings(),
-        desktop: {
-          ...getSettings().desktop,
-          launchAtLogin: !getSettings().desktop.launchAtLogin
-        }
-      };
-      setSettings(nextSettings);
-      applyLoginItemSettings(nextSettings.desktop.launchAtLogin);
-      void emitSnapshot();
-    }
-  });
-  cliServer = await startCliServer(async (command) => handleCliCommand(command.args));
-  if (settings.desktop.startRecordingOnLaunch) {
-    await sidecar.request({ id: randomUUID(), method: "recording.start" });
+  if (!isE2E) {
+    initializeTray({
+      iconPath: icon,
+      onOpen: toggleMainWindow,
+      onQuit: () => app.quit(),
+      onStartRecording: () => {
+        void startRecording()
+          .catch((error) => {
+            captureStartRecordingError(error);
+          })
+          .then(() => getSnapshot({ refreshHistory: true }).then(emitSnapshot));
+      },
+      onStopRecording: () => {
+        void engine?.stopRecording().then(() => getSnapshot({ refreshHistory: true }).then(emitSnapshot));
+      },
+      onToggleLaunchAtLogin: () => {
+        const nextSettings: AppSettings = {
+          ...getSettings(),
+          desktop: {
+            ...getSettings().desktop,
+            launchAtLogin: !getSettings().desktop.launchAtLogin
+          }
+        };
+        setSettings(nextSettings);
+        applyLoginItemSettings(nextSettings.desktop.launchAtLogin);
+        void emitSnapshot();
+      }
+    });
   }
-  initializeAutoUpdates();
+  if (settings.desktop.startRecordingOnLaunch) {
+    try {
+      await startRecording();
+    } catch (error) {
+      captureStartRecordingError(error);
+    }
+  }
+  if (!isE2E) {
+    initializeAutoUpdates();
+  }
 };
 
 ipcMain.handle("desktop:get-snapshot", () =>
@@ -307,7 +309,9 @@ ipcMain.handle("desktop:open-recording-folder", async (_event, target: string) =
   await shell.openPath(target);
 });
 ipcMain.handle("desktop:request-permission", async () => {
-  const permission = await requestMicrophonePermission();
+  const permission = isE2E
+    ? cachedPermission
+    : await requestMicrophonePermission();
   cachedPermission = permission;
   await emitSnapshot(buildSnapshot());
   return permission;
@@ -316,7 +320,7 @@ ipcMain.handle("desktop:save-settings", async (_event, settings: AppSettings) =>
   const saved = setSettings(settings);
   applyLoginItemSettings(saved.desktop.launchAtLogin);
   applyTheme(saved.desktop.theme);
-  await sidecar?.applySettings(saved);
+  engine?.applySettings(saved);
   await emitSnapshot(
     await getSnapshot({
       refreshDevices: true,
@@ -327,19 +331,15 @@ ipcMain.handle("desktop:save-settings", async (_event, settings: AppSettings) =>
 });
 ipcMain.handle("desktop:open-permission-settings", openMicrophonePrivacySettings);
 ipcMain.handle("desktop:start-recording", async () => {
-  await sidecar?.request({ id: randomUUID(), method: "recording.start" });
+  await startRecording();
   return getSnapshot({ refreshHistory: true });
 });
 ipcMain.handle("desktop:stop-recording", async () => {
-  await sidecar?.request({ id: randomUUID(), method: "recording.stop" });
+  await engine?.stopRecording();
   return getSnapshot({ refreshHistory: true });
 });
 ipcMain.handle("desktop:run-transcribe", async (_event, inputDir: string) => {
-  await sidecar?.request({
-    id: randomUUID(),
-    method: "transcribe.run",
-    params: { inputDir }
-  });
+  await engine?.runTranscribe(inputDir);
   return getSnapshot({ refreshHistory: true });
 });
 ipcMain.handle("desktop:set-window-pinned", async (_event, pinned: boolean) => {
@@ -348,18 +348,38 @@ ipcMain.handle("desktop:set-window-pinned", async (_event, pinned: boolean) => {
   await emitSnapshot(snapshot);
   return snapshot;
 });
+ipcMain.handle("desktop:update-devices", async (_event, devices: DeviceInfo[]) => {
+  cachedDevices = devices;
+  engine?.updateDevices(devices);
+  const snapshot = buildSnapshot();
+  await emitSnapshot(snapshot, { force: true });
+  return snapshot;
+});
+ipcMain.handle("desktop:capture-error", async (_event, message: string) => {
+  engine?.reportCaptureError(message);
+  const snapshot = buildSnapshot();
+  await emitSnapshot(snapshot, { force: true });
+  return snapshot;
+});
+ipcMain.on("desktop:audio-chunk", (_event, payload: {
+  deviceId: string;
+  deviceLabel: string;
+  rms: number;
+  sampleRate: number;
+  samples: number[];
+}) => {
+  const samples = Float32Array.from(payload.samples);
+  void engine?.pushAudioChunk({
+    ...payload,
+    samples
+  });
+});
 
-if (!isCliMode && !app.requestSingleInstanceLock()) {
+if (!isE2E && !app.requestSingleInstanceLock()) {
   app.quit();
 }
 
 app.whenReady().then(async () => {
-  if (isCliMode) {
-    const cliArgs = process.argv.slice(process.argv.indexOf("--cli") + 1);
-    const exitCode = await startCliClient(cliArgs);
-    app.exit(exitCode);
-    return;
-  }
   try {
     await bootstrapDesktop();
   } catch (error) {
@@ -381,10 +401,22 @@ app.on("window-all-closed", () => {
   }
 });
 
-app.on("before-quit", () => {
+app.on("before-quit", (event) => {
   isQuitting = true;
-  cliServer?.close();
-  destroyTray();
-  shutdownAutoUpdates();
-  sidecar?.stop();
+  if (!isE2E) {
+    destroyTray();
+    shutdownAutoUpdates();
+  }
+  if (quitAfterRecordingFinalize || !lastStatus.recording) {
+    return;
+  }
+  event.preventDefault();
+  quitAfterRecordingFinalize = true;
+  void finalizeRecordingBeforeQuit()
+    .catch((error) => {
+      log.error("[eve] failed to finalize recording before quit", error);
+    })
+    .finally(() => {
+      app.quit();
+    });
 });

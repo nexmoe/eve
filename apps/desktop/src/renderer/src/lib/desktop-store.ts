@@ -18,10 +18,10 @@ const defaultPermission = (): MicrophonePermissionStatus => ({
 
 let snapshot: DesktopSnapshot = {
   devices: [],
+  engineReady: false,
   history: [],
   permission: defaultPermission(),
   settings: DEFAULT_SETTINGS,
-  sidecarReady: false,
   status: DEFAULT_STATUS,
   windowPinned: false
 };
@@ -29,6 +29,7 @@ let snapshot: DesktopSnapshot = {
 const listeners = new Set<() => void>();
 const bridge = window.eve;
 let saveSequence = 0;
+let lastStatusError: string | null = null;
 
 const publish = (): void => {
   for (const listener of listeners) {
@@ -37,7 +38,19 @@ const publish = (): void => {
 };
 
 const updateSnapshot = (nextSnapshot: DesktopSnapshot): void => {
+  const nextError = nextSnapshot.status.error?.trim() || null;
+  const previousError = snapshot.status.error?.trim() || null;
   snapshot = nextSnapshot;
+  if (nextError && nextError !== previousError && nextError !== lastStatusError) {
+    lastStatusError = nextError;
+    toastActions.show({
+      message: nextError,
+      title: createT(nextSnapshot.settings.desktop.language)("errorStartRecordingFailed")
+    });
+  }
+  if (!nextError) {
+    lastStatusError = null;
+  }
   publish();
 };
 
@@ -141,11 +154,26 @@ export const desktopActions = {
     );
   },
   async startRecording(): Promise<void> {
-    updateSnapshot(
-      await withToast(createT(snapshot.settings.desktop.language)("errorStartRecordingFailed"), () =>
-        bridge?.startRecording() ?? rejectBridgeCall()
-      )
+    const title = createT(snapshot.settings.desktop.language)("errorStartRecordingFailed");
+    const nextSnapshot = await withToast(title, () =>
+      bridge?.startRecording() ?? rejectBridgeCall()
     );
+    updateSnapshot(nextSnapshot);
+    if (nextSnapshot.status.recording) {
+      return;
+    }
+    const message =
+      nextSnapshot.status.error?.trim() ||
+      nextSnapshot.status.statusMessage.trim() ||
+      createT(nextSnapshot.settings.desktop.language)("errorUnknown");
+    if (message !== lastStatusError) {
+      lastStatusError = message;
+      toastActions.show({
+        message,
+        title
+      });
+    }
+    throw new Error(message);
   },
   async stopRecording(): Promise<void> {
     updateSnapshot(

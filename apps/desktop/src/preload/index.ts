@@ -1,8 +1,21 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { AppSettings, DesktopSnapshot, MicrophonePermissionStatus } from "@eve/shared";
+import type {
+  AppSettings,
+  DesktopSnapshot,
+  DeviceInfo,
+  MicrophonePermissionStatus
+} from "@eve/shared";
 
 export interface DesktopBridgeApi {
   bootstrap: () => Promise<DesktopSnapshot>;
+  captureError: (message: string) => Promise<DesktopSnapshot>;
+  pushAudioChunk: (payload: {
+    deviceId: string;
+    deviceLabel: string;
+    rms: number;
+    sampleRate: number;
+    samples: Float32Array;
+  }) => void;
   openRecordingFolder: (target: string) => Promise<void>;
   pickDirectory: (defaultPath?: string) => Promise<string | null>;
   onSnapshot: (listener: (snapshot: DesktopSnapshot) => void) => () => void;
@@ -14,10 +27,18 @@ export interface DesktopBridgeApi {
   setWindowPinned: (pinned: boolean) => Promise<DesktopSnapshot>;
   startRecording: () => Promise<DesktopSnapshot>;
   stopRecording: () => Promise<DesktopSnapshot>;
+  updateDevices: (devices: DeviceInfo[]) => Promise<DesktopSnapshot>;
 }
 
 const api: DesktopBridgeApi = {
   bootstrap: () => ipcRenderer.invoke("desktop:get-snapshot"),
+  captureError: (message) => ipcRenderer.invoke("desktop:capture-error", message),
+  pushAudioChunk: ({ samples, ...payload }) => {
+    ipcRenderer.send("desktop:audio-chunk", {
+      ...payload,
+      samples: Array.from(samples)
+    });
+  },
   openRecordingFolder: (target) => ipcRenderer.invoke("desktop:open-recording-folder", target),
   pickDirectory: (defaultPath) => ipcRenderer.invoke("desktop:pick-directory", defaultPath),
   onSnapshot: (listener) => {
@@ -36,7 +57,8 @@ const api: DesktopBridgeApi = {
   saveSettings: (settings) => ipcRenderer.invoke("desktop:save-settings", settings),
   setWindowPinned: (pinned) => ipcRenderer.invoke("desktop:set-window-pinned", pinned),
   startRecording: () => ipcRenderer.invoke("desktop:start-recording"),
-  stopRecording: () => ipcRenderer.invoke("desktop:stop-recording")
+  stopRecording: () => ipcRenderer.invoke("desktop:stop-recording"),
+  updateDevices: (devices) => ipcRenderer.invoke("desktop:update-devices", devices)
 };
 
 contextBridge.exposeInMainWorld("eve", api);

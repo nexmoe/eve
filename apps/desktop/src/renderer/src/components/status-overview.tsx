@@ -13,6 +13,7 @@ export function StatusOverview({
   onRequestPermission,
   onStart,
   onStop,
+  sharedStream,
   snapshot
 }: {
   onTogglePinned: (pinned: boolean) => Promise<void>;
@@ -20,6 +21,7 @@ export function StatusOverview({
   onRequestPermission: () => Promise<unknown>;
   onStart: () => Promise<void>;
   onStop: () => Promise<void>;
+  sharedStream: MediaStream | null;
   snapshot: DesktopSnapshot;
 }) {
   const t = createT(snapshot.settings.desktop.language);
@@ -65,7 +67,7 @@ export function StatusOverview({
       {/* Waveform — mirrors Viora RecordingWaveform usage */}
       <LiveWaveform
         active={recording}
-        processing={!recording && snapshot.status.asrEnabled}
+        processing={!recording && snapshot.status.downloading}
         mode="static"
         centerStaticBars
         barWidth={2.5}
@@ -75,7 +77,36 @@ export function StatusOverview({
         fadeWidth={20}
         height={72}
         className="w-full"
+        requireSharedStream={recording}
+        sharedStream={sharedStream}
       />
+
+      {snapshot.status.downloading && (
+        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-raised-sm)] px-3.5 py-3">
+          <p className="text-xs font-semibold tracking-tight text-[color:var(--foreground)]">
+            {t("modelDownloadTitle")}
+          </p>
+          <p className="mt-1 text-[11px] leading-5 text-[color:var(--muted)]">
+            {snapshot.status.downloadMessage || t("modelDownloadPreparing")}
+          </p>
+          {snapshot.status.downloadProgress !== null && (
+            <p className="mt-1 text-[11px] leading-5 text-[color:var(--foreground)]">
+              {t("modelDownloadProgress", { percent: snapshot.status.downloadProgress })}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!snapshot.status.ffmpegAvailable && (
+        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-raised-sm)] px-3.5 py-3">
+          <p className="text-xs font-semibold tracking-tight text-[color:var(--foreground)]">
+            {t("ffmpegRequiredTitle")}
+          </p>
+          <p className="mt-1 text-[11px] leading-5 text-[color:var(--muted)]">
+            {t("ffmpegRequiredDescription")}
+          </p>
+        </div>
+      )}
 
       {/* Metrics */}
       <div className="metric-stack">
@@ -104,7 +135,7 @@ export function StatusOverview({
 
       {/* Permission banner (only when needed) */}
       {snapshot.permission.state !== "authorized" && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-3.5 py-3">
+        <div className="flex items-center gap-2.5 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-raised-sm)] px-3.5 py-3">
           <ShieldCheck className="h-4 w-4 shrink-0 text-[color:var(--accent)]" />
           <span className="flex-1 text-xs leading-5 text-[color:var(--muted)]">
             {permissionMessage(snapshot.permission.state, t)}
@@ -121,7 +152,7 @@ export function StatusOverview({
         </div>
       )}
 
-      <section className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-3.5 py-3">
+      <section className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-raised-sm)] px-3.5 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold tracking-tight text-[color:var(--foreground)]">
@@ -145,37 +176,37 @@ export function StatusOverview({
         </div>
 
         {hasTranscript ? (
-          <div className="mt-2.5 space-y-2">
+          <div className="mt-2 grid gap-1.5">
             {preview && (
-              <div className="rounded-lg bg-[color:var(--panel)] px-2.5 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
-                  {t("liveTranscriptCurrentSegment")}
-                </p>
-                <p className="mt-1 text-xs leading-5 text-[color:var(--foreground)]">
-                  {preview}
-                </p>
-              </div>
-            )}
-
-            {history.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
-                  {t("liveTranscriptRecent")}
-                </p>
-                <div className="space-y-1.5">
-                  {history.map((item, index) => (
-                    <div
-                      key={`${index}-${item}`}
-                      className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2.5 py-1.5"
-                    >
-                      <p className="text-[11px] leading-5 text-[color:var(--foreground)]">
-                        {item}
-                      </p>
-                    </div>
-                  ))}
+              <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--panel)] px-2.5 py-2">
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 rounded-full bg-[color:var(--surface-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--muted)]">
+                    {t("liveTranscriptCurrentSegment")}
+                  </span>
+                  <p className="min-w-0 flex-1 text-[11px] leading-5 text-[color:var(--foreground)]">
+                    {preview}
+                  </p>
                 </div>
               </div>
             )}
+
+            {history.map((item, index) => (
+              <div
+                key={`${index}-${item}`}
+                className="flex items-start gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2.5 py-1.5"
+              >
+                {index === 0 ? (
+                  <span className="mt-0.5 shrink-0 rounded-full bg-[color:var(--panel)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--muted)]">
+                    {t("liveTranscriptRecent")}
+                  </span>
+                ) : (
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[color:var(--muted)]/60" />
+                )}
+                <p className="min-w-0 flex-1 text-[11px] leading-5 text-[color:var(--foreground)]">
+                  {item}
+                </p>
+              </div>
+            ))}
           </div>
         ) : (
           <p className="mt-2.5 text-[11px] leading-5 text-[color:var(--muted)]">

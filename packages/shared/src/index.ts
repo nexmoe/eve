@@ -14,26 +14,10 @@ export interface DesktopSettings {
 
 export interface RecordingSettings {
   audioFormat: AudioFormat;
-  asrDevice: string;
-  asrDtype: "auto" | "float16" | "float32";
   asrLanguage: string;
-  asrMaxBatchSize: number;
-  asrMaxNewTokens: number;
-  asrModel: string;
-  asrPreload: boolean;
   autoSwitchConfirmations: number;
-  autoSwitchCooldownSeconds: number;
   autoSwitchDevice: boolean;
-  autoSwitchMaxCandidatesPerScan: number;
-  autoSwitchMinRatio: number;
-  autoSwitchMinRms: number;
-  autoSwitchProbeSeconds: number;
-  autoSwitchScanSeconds: number;
-  consoleFeedback: boolean;
-  consoleFeedbackHz: number;
   device: string;
-  deviceCheckSeconds: number;
-  deviceRetrySeconds: number;
   disableAsr: boolean;
   excludeDeviceKeywords: string;
   outputDir: string;
@@ -41,19 +25,6 @@ export interface RecordingSettings {
 }
 
 export interface TranscribeSettings {
-  asrDevice: string;
-  asrDtype: "auto" | "float16" | "float32";
-  asrLanguage: string;
-  asrMaxBatchSize: number;
-  asrMaxNewTokens: number;
-  asrModel: string;
-  asrPreload: boolean;
-  force: boolean;
-  inputDir: string;
-  limit: number;
-  pollSeconds: number;
-  prefix: string;
-  settleSeconds: number;
   watch: boolean;
 }
 
@@ -89,14 +60,20 @@ export interface RecorderStatusSnapshot {
   asrPreview: string;
   autoSwitchEnabled: boolean;
   db: number;
+  downloadMessage: string;
+  downloadProgress: number | null;
   deviceLabel: string;
   elapsed: string;
   error: string | null;
+  ffmpegAvailable: boolean;
   inSpeech: boolean;
   levelRatio: number;
+  downloading: boolean;
   recording: boolean;
   rms: number;
+  senseVoiceReady: boolean;
   statusMessage: string;
+  vadReady: boolean;
   waveformBins: number[];
 }
 
@@ -136,10 +113,10 @@ export type SidecarEvent =
 
 export interface DesktopSnapshot {
   devices: DeviceInfo[];
+  engineReady: boolean;
   history: RecordingHistoryItem[];
   permission: MicrophonePermissionStatus;
   settings: AppSettings;
-  sidecarReady: boolean;
   status: RecorderStatusSnapshot;
   windowPinned: boolean;
 }
@@ -154,45 +131,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   recording: {
     audioFormat: "flac",
-    asrDevice: "auto",
-    asrDtype: "auto",
     asrLanguage: "auto",
-    asrMaxBatchSize: 1,
-    asrMaxNewTokens: 256,
-    asrModel: "Qwen/Qwen3-ASR-0.6B",
-    asrPreload: false,
     autoSwitchConfirmations: 2,
-    autoSwitchCooldownSeconds: 8,
     autoSwitchDevice: true,
-    autoSwitchMaxCandidatesPerScan: 2,
-    autoSwitchMinRatio: 1.8,
-    autoSwitchMinRms: 0.006,
-    autoSwitchProbeSeconds: 0.25,
-    autoSwitchScanSeconds: 3,
-    consoleFeedback: false,
-    consoleFeedbackHz: 12,
     device: "default",
-    deviceCheckSeconds: 2,
-    deviceRetrySeconds: 2,
     disableAsr: false,
     excludeDeviceKeywords: "iphone,continuity",
     outputDir: "recordings",
     segmentMinutes: 60
   },
   transcribe: {
-    asrDevice: "auto",
-    asrDtype: "auto",
-    asrLanguage: "auto",
-    asrMaxBatchSize: 1,
-    asrMaxNewTokens: 256,
-    asrModel: "Qwen/Qwen3-ASR-0.6B",
-    asrPreload: false,
-    force: false,
-    inputDir: "recordings",
-    limit: 0,
-    pollSeconds: 2,
-    prefix: "eve",
-    settleSeconds: 3,
     watch: false
   }
 };
@@ -203,13 +151,19 @@ export const DEFAULT_STATUS: RecorderStatusSnapshot = {
   asrPreview: "",
   autoSwitchEnabled: true,
   db: -80,
+  downloadMessage: "",
+  downloadProgress: null,
   deviceLabel: "default",
   elapsed: "00:00:00",
   error: null,
+  ffmpegAvailable: false,
   inSpeech: false,
   levelRatio: 0,
+  downloading: false,
   recording: false,
   rms: 0,
+  senseVoiceReady: false,
   statusMessage: "桌面端已就绪。",
+  vadReady: false,
   waveformBins: Array.from({ length: 48 }, () => 0)
 };

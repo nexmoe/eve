@@ -7,7 +7,7 @@ const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 let updateCheckTimer: NodeJS.Timeout | null = null;
 
 const shouldEnableAutoUpdate = (): boolean => {
-  return app.isPackaged && !process.argv.includes("--cli");
+  return app.isPackaged;
 };
 
 const runUpdateCheck = async (): Promise<void> => {
@@ -23,7 +23,7 @@ const runUpdateCheck = async (): Promise<void> => {
 
 export const initializeAutoUpdates = (): void => {
   if (!shouldEnableAutoUpdate()) {
-    log.info("[eve-updater] skipped update initialization in development or CLI mode");
+    log.info("[eve-updater] skipped update initialization in development");
     return;
   }
   log.initialize();

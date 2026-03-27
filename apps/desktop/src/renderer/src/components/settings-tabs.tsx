@@ -62,6 +62,7 @@ export function SettingsTabs({ snapshot }: { snapshot: DesktopSnapshot }) {
         <TranscribeTab
           options={options}
           settings={draft}
+          snapshot={snapshot}
           t={t}
           updateRecording={updateRecording}
           updateTranscribe={updateTranscribe}

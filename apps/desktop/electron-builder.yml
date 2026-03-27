@@ -17,59 +17,18 @@ files:
 asar:
   smartUnpack: false
 asarUnpack:
-  - resources/**
+  - node_modules/**/*.node
+  - node_modules/sherpa-onnx-*/**/*
+  - node_modules/sherpa-onnx-node/**/*
 extraResources:
-  - from: resources/bin
-    to: bin
+  - from: .generated/sherpa-runtime
+    to: vendor/sherpa-runtime
     filter:
-      - '**/*'
-  - from: .generated/shared-python-runtime
-    to: vendor/shared-python-runtime
+      - "**/*"
+  - from: vendor/ffmpeg
+    to: vendor/ffmpeg
     filter:
-      - '**/*'
-      - '!**/__pycache__/**'
-      - '!**/docs/**'
-      - '!**/*.pyc'
-      - '!**/*.pyo'
-      - '!**/test/**'
-      - '!**/tests/**'
-      - '!python/**/ensurepip/**'
-      - '!python/**/idlelib/**'
-      - '!python/**/tkinter/**'
-      - '!python/**/turtledemo/**'
-      - '!python/**/site-packages/pip/**'
-      - '!python/**/site-packages/pip-*.dist-info/**'
-      - '!python/**/site-packages/setuptools/**'
-      - '!python/**/site-packages/setuptools-*.dist-info/**'
-      - '!runtime/**/fastapi/**'
-      - '!runtime/**/fastapi-*.dist-info/**'
-      - '!runtime/**/flask/**'
-      - '!runtime/**/flask-*.dist-info/**'
-      - '!runtime/**/gradio/**'
-      - '!runtime/**/gradio-*.dist-info/**'
-      - '!runtime/**/gradio_client/**'
-      - '!runtime/**/gradio_client-*.dist-info/**'
-      - '!runtime/**/pip/**'
-      - '!runtime/**/pip-*.dist-info/**'
-      - '!runtime/**/setuptools/**'
-      - '!runtime/**/setuptools-*.dist-info/**'
-      - '!runtime/**/uvicorn/**'
-      - '!runtime/**/uvicorn-*.dist-info/**'
-      - '!runtime/**/werkzeug/**'
-      - '!runtime/**/werkzeug-*.dist-info/**'
-      - '!runtime/Lib/site-packages/qwen_asr/cli/**'
-      - '!runtime/lib/python3.12/site-packages/qwen_asr/cli/**'
-      - '!runtime/Lib/site-packages/torch/include/**'
-      - '!runtime/lib/python3.12/site-packages/torch/include/**'
-      - '!runtime/Lib/site-packages/torch/share/**'
-      - '!runtime/lib/python3.12/site-packages/torch/share/**'
-  - from: vendor/eve-sidecar
-    to: vendor/eve-sidecar
-    filter:
-      - '**/*'
-      - '!**/__pycache__/**'
-      - '!**/*.pyc'
-      - '!**/*.pyo'
+      - "**/*"
 mac:
   artifactName: ${productName}-${version}-installer.${ext}
   category: public.app-category.productivity
@@ -85,6 +44,7 @@ mac:
     - CFBundleDisplayName: eve
     - CFBundleName: eve
     - LSUIElement: true
+    - NSCameraUseContinuityCameraDeviceType: true
     - NSMicrophoneUsageDescription: eve 需要麦克风权限来完成长时录音与实时转写。
 win:
   executableName: eve
@@ -97,6 +57,8 @@ nsis:
   shortcutName: eve
   uninstallDisplayName: eve
 npmRebuild: false
+electronLanguages:
+  - en
 publish:
   - provider: github
     owner: nexmoe

@@ -15,9 +15,12 @@ const buttonVariants = cva(
         sm: "h-8 px-3.5 text-xs"
       },
       variant: {
-        default: "bg-[color:var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90",
-        ghost: "bg-transparent text-[color:var(--foreground)] hover:bg-[color:var(--surface-soft)]",
-        subtle: "bg-[color:var(--surface)] text-[color:var(--foreground)] ring-1 ring-[color:var(--border)]"
+        default:
+          "bg-gradient-to-b from-[color:var(--accent)] to-[color:color-mix(in_srgb,var(--accent)_85%,black)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-raised)] hover:brightness-110 active:shadow-[var(--shadow-inset)] active:brightness-95",
+        ghost:
+          "bg-transparent text-[color:var(--foreground)] hover:bg-[color:var(--surface-soft)] hover:shadow-[var(--shadow-raised-sm)]",
+        subtle:
+          "bg-[color:var(--surface)] text-[color:var(--foreground)] ring-1 ring-[color:var(--border)] shadow-[var(--shadow-raised-sm)] active:shadow-[var(--shadow-inset)]"
       }
     }
   }

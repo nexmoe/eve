@@ -4,19 +4,22 @@ export function SettingField({
   control,
   description,
   layout = "inline",
+  testId,
   title
 }: {
   control: ReactNode;
   description: string;
   layout?: "inline" | "stacked";
+  testId?: string;
   title: string;
 }) {
   return (
     <div
+      data-testid={testId}
       className={
         layout === "inline"
-          ? "flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3.5"
-          : "flex flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3.5"
+          ? "flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-raised-sm)] px-4 py-3.5"
+          : "flex flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-raised-sm)] px-4 py-3.5"
       }
     >
       <div className="min-w-0 flex-1">

@@ -13,6 +13,12 @@
   --accent-foreground: #ffffff;
   --ring: rgba(0, 122, 255, 0.3);
   --panel-gutter: 1rem;
+
+  --highlight: rgba(255, 255, 255, 0.7);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --shadow-raised-sm: 0 0.5px 1.5px rgba(0, 0, 0, 0.06), inset 0 0.5px 0 rgba(255, 255, 255, 0.5);
+  --shadow-knob: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -26,6 +32,12 @@
     --accent: #0a84ff;
     --accent-foreground: #ffffff;
     --ring: rgba(10, 132, 255, 0.35);
+
+    --highlight: rgba(255, 255, 255, 0.08);
+    --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --shadow-raised-sm: 0 0.5px 1.5px rgba(0, 0, 0, 0.2), inset 0 0.5px 0 rgba(255, 255, 255, 0.04);
+    --shadow-knob: 0 1px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.15);
   }
 }
 
@@ -123,6 +135,7 @@ a {
   border-radius: 0.75rem;
   background: var(--surface);
   overflow: hidden;
+  box-shadow: var(--shadow-raised-sm);
 }
 
 .metric-row-inner {

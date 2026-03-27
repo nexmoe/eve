@@ -5,26 +5,23 @@
 ## 项目结构
 
 ```text
-apps/desktop        Electron 主进程/预加载/渲染进程、托盘、打包、CI 入口
-packages/shared     桌面端与渲染进程共享的 TypeScript 类型
-src/eve             Python 录音 / VAD / ASR 核心，作为 sidecar 运行时使用
+apps/desktop        Electron 主进程 / preload / renderer、托盘、打包
+packages/shared     主进程与渲染进程共享的 TypeScript 类型
 ```
 
 ## 环境要求
 
-- Python >= 3.12
-- [uv](https://docs.astral.sh/uv/)（Python 依赖管理）
-- [Bun](https://bun.sh/) >= 1.3.2（前端与桌面端）
+- [Bun](https://bun.sh/) >= 1.3.2
+- `ffmpeg`，用于 FLAC 输出和非 WAV 转写
 
 ```bash
-brew install uv bun
+brew install bun ffmpeg
 ```
 
 ## 安装依赖
 
 ```bash
 bun install
-uv sync
 ```
 
 ## 开发运行
@@ -33,29 +30,16 @@ uv sync
 bun run dev:desktop
 ```
 
-Electron 应用从 `apps/desktop` 启动，会自动拉起 Python sidecar。
+现在项目已经是纯 Electron 架构，不再包含 Python runtime 或 sidecar CLI。
 
-也可以只运行 Python CLI：
-
-```bash
-uv run eve
-```
-
-如果要启动旧版托盘模式：
-
-```bash
-uv run eve desktop
-```
-
-## 类型检查与测试
+## 检查与测试
 
 ```bash
 bun run typecheck
 bun run test
-uv run --with pytest pytest apps/desktop/vendor/eve-sidecar/tests
 ```
 
-## 构建桌面安装包
+## 构建安装包
 
 ```bash
 bun run build
@@ -66,54 +50,11 @@ bun run build:win
 
 构建产物：
 
-- macOS: `.dmg`, `.zip`, `.pkg`
-- Windows: NSIS `.exe`
+- macOS：`.dmg`、`.zip`、`.pkg`
+- Windows：NSIS `.exe`
 
-### Python Sidecar 运行时
+## 说明
 
-桌面应用在打包前需要准备捆绑的 Python 运行时：
-
-```bash
-cd apps/desktop
-bun run prepare:shared-runtime
-```
-
-运行时输出到 `apps/desktop/.generated/shared-python-runtime`，生产包会捆绑此运行时，用户无需安装系统 Python。
-
-## CI/CD
-
-GitHub Actions 工作流：`.github/workflows/desktop-release.yml`
-
-- `checks`：类型检查 + JS 测试 + Python sidecar 测试
-- `build`：macOS + Windows 安装包
-- `publish`：`v*` tag 触发发布安装包、自动更新元数据与校验和
-
-签名 secrets 为可选，未配置时仍可构建未签名包，但 macOS 想在其他机器上正常打开仍需要签名和 notarization。
-
-如需接入 macOS 签名，在 GitHub Actions 中配置以下 secrets：
-
-- `MAC_CERT_P12_BASE64`
-- `MAC_CERT_P12_PASSWORD`
-- `APPLE_API_KEY_P8_BASE64`
-- `APPLE_API_KEY_ID`
-- `APPLE_API_ISSUER`
-
-## ASR 依赖
-
-ASR 转写为可选功能，依赖已包含在默认安装中。仅在实时转写或使用 `eve transcribe` 时需要。
-
-关闭 ASR 时仅录音，不会加载模型；后续可用 `eve transcribe` 异步生成 `.json` 转写结果。
-
-### 资源建议
-
-- 仅录音（`--disable-asr`）：内存 `2GB+`，CPU 双核即可
-- 录音 + 实时转写（CPU）：内存 `8GB+`（最低 `4GB`），建议 4 核及以上
-- 录音 + 实时转写（GPU/NPU）：内存 `8GB+`，可显著降低 CPU 占用
-- 磁盘空间：建议预留至少 `10GB` 用于长期归档
-
-## 贡献者须知
-
+- 模型会在首次使用时下载到应用用户数据目录。
+- `sherpa-onnx-node` 会随 Electron 应用一起打包，并在生产构建时解包原生模块。
 - 新文件不超过 500 行。
-- 不要重新引入 `flet`、`pystray` 或旧版 PyInstaller 打包路径。
-- Electron 为设置与权限的唯一入口。
-- Python 仅作为音频工作的执行基础设施，不作为桌面壳。

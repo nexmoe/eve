@@ -1,5 +1,5 @@
 import { Menu, Tray, app, nativeImage } from "electron";
-import type { RecorderStatusSnapshot } from "@eve/shared";
+import { DEFAULT_STATUS, type RecorderStatusSnapshot } from "@eve/shared";
 
 interface TrayControllerOptions {
   iconPath: string;
@@ -92,22 +92,7 @@ export const initializeTray = (options: TrayControllerOptions): void => {
   trayState = {
     ...options,
     launchAtLogin: false,
-    status: {
-      asrEnabled: true,
-      asrHistory: [],
-      asrPreview: "",
-      autoSwitchEnabled: true,
-      db: -80,
-      deviceLabel: "default",
-      elapsed: "00:00:00",
-      error: null,
-      inSpeech: false,
-      levelRatio: 0,
-      recording: false,
-      rms: 0,
-      statusMessage: "桌面端已就绪。",
-      waveformBins: Array.from({ length: 48 }, () => 0)
-    },
+    status: { ...DEFAULT_STATUS },
     tray
   };
   syncTray();
