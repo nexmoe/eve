@@ -1,11 +1,23 @@
-import { cpSync, existsSync, mkdirSync, realpathSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, realpathSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const desktopDirectory = resolve(__dirname, "..");
 const outputDirectory = resolve(desktopDirectory, ".generated", "sherpa-runtime");
-const nodeModulesDirectory = resolve(desktopDirectory, "node_modules");
+const workspaceNodeModulesDirectories = (() => {
+  const directories = [];
+  let currentDirectory = desktopDirectory;
+
+  while (true) {
+    directories.push(join(currentDirectory, "node_modules"));
+    const parentDirectory = dirname(currentDirectory);
+    if (parentDirectory === currentDirectory) {
+      return directories;
+    }
+    currentDirectory = parentDirectory;
+  }
+})();
 
 const platformPackageName = (() => {
   if (process.platform === "darwin" && process.arch === "arm64") {
@@ -30,15 +42,36 @@ const platformPackageName = (() => {
 })();
 
 const resolveBunPackageDirectory = (packageName) => {
-  const packageLinkPath = join(nodeModulesDirectory, packageName);
-  if (!existsSync(packageLinkPath)) {
-    throw new Error(`Unable to locate ${packageName} in ${nodeModulesDirectory}.`);
+  for (const nodeModulesDirectory of workspaceNodeModulesDirectories) {
+    const packageLinkPath = join(nodeModulesDirectory, packageName);
+    if (existsSync(packageLinkPath)) {
+      const packageDirectory = realpathSync(packageLinkPath);
+      if (!existsSync(packageDirectory)) {
+        throw new Error(`Resolved package directory is missing: ${packageDirectory}`);
+      }
+      return packageDirectory;
+    }
+
+    const bunStorePath = join(nodeModulesDirectory, ".bun");
+    if (!existsSync(bunStorePath)) {
+      continue;
+    }
+
+    for (const entry of readdirSync(bunStorePath)) {
+      if (!entry.startsWith(`${packageName}@`)) {
+        continue;
+      }
+
+      const candidate = join(bunStorePath, entry, "node_modules", packageName);
+      if (existsSync(candidate)) {
+        return realpathSync(candidate);
+      }
+    }
   }
-  const packageDirectory = realpathSync(packageLinkPath);
-  if (!existsSync(packageDirectory)) {
-    throw new Error(`Resolved package directory is missing: ${packageDirectory}`);
-  }
-  return packageDirectory;
+
+  throw new Error(
+    `Unable to locate ${packageName} in workspace node_modules: ${workspaceNodeModulesDirectories.join(", ")}.`
+  );
 };
 
 rmSync(outputDirectory, { force: true, recursive: true });
