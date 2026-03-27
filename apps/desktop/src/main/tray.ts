@@ -4,6 +4,7 @@ import { DEFAULT_STATUS, type RecorderStatusSnapshot } from "@eve/shared";
 interface TrayControllerOptions {
   iconPath: string;
   onOpen: () => void;
+  onOpenDevTools: () => void;
   onQuit: () => void;
   onStartRecording: () => void;
   onStopRecording: () => void;
@@ -60,6 +61,17 @@ const buildMenu = (): Menu => {
     {
       enabled: false,
       label: `设备：${trayState.status.deviceLabel}`
+    },
+    {
+      click: trayState.onOpenDevTools,
+      label: "打开开发者工具"
+    },
+    {
+      type: "separator"
+    },
+    {
+      click: trayState.onOpen,
+      label: "打开主窗口"
     },
     {
       type: "separator"

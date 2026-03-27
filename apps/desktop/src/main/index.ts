@@ -147,6 +147,17 @@ const toggleMainWindow = (): void => {
   }).then((snapshot) => emitSnapshot(snapshot, { force: true }));
 };
 
+const openRendererDevTools = (): void => {
+  mainWindow ??= createMainWindow(true);
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  positionNearTray(mainWindow, getTrayBounds());
+  mainWindow.show();
+  mainWindow.focus();
+  mainWindow.webContents.openDevTools({ mode: "detach" });
+};
+
 const applyLoginItemSettings = (enabled: boolean): void => {
   if (isE2E) {
     return;
@@ -261,6 +272,7 @@ const bootstrapDesktop = async (): Promise<void> => {
     initializeTray({
       iconPath: icon,
       onOpen: toggleMainWindow,
+      onOpenDevTools: openRendererDevTools,
       onQuit: () => app.quit(),
       onStartRecording: () => {
         void startRecording()
