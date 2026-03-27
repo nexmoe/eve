@@ -40,11 +40,18 @@
     "lucide-react": "^0.542.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "sherpa-onnx-darwin-arm64": "1.12.34",
     "sherpa-onnx-node": "1.12.34",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
     "tailwindcss-animate": "^1.0.7"
+  },
+  "optionalDependencies": {
+    "sherpa-onnx-darwin-arm64": "1.12.34",
+    "sherpa-onnx-darwin-x64": "1.12.34",
+    "sherpa-onnx-linux-arm64": "1.12.34",
+    "sherpa-onnx-linux-x64": "1.12.34",
+    "sherpa-onnx-win-ia32": "1.12.34",
+    "sherpa-onnx-win-x64": "1.12.34"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

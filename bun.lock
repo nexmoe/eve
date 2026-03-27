@@ -7,7 +7,7 @@
     },
     "apps/desktop": {
       "name": "eve-desktop",
-      "version": "0.5.15",
+      "version": "0.6.0",
       "dependencies": {
         "@eve/shared": "workspace:*",
         "@radix-ui/react-scroll-area": "^1.2.9",
@@ -27,7 +27,6 @@
         "lucide-react": "^0.542.0",
         "react": "^19.2.1",
         "react-dom": "^19.2.1",
-        "sherpa-onnx-darwin-arm64": "1.12.34",
         "sherpa-onnx-node": "1.12.34",
         "tailwind-merge": "^3.5.0",
         "tailwindcss": "^4.2.1",
@@ -46,6 +45,14 @@
         "typescript": "^5.9.3",
         "vite": "^7.2.6",
         "vitest": "^3.2.4",
+      },
+      "optionalDependencies": {
+        "sherpa-onnx-darwin-arm64": "1.12.34",
+        "sherpa-onnx-darwin-x64": "1.12.34",
+        "sherpa-onnx-linux-arm64": "1.12.34",
+        "sherpa-onnx-linux-x64": "1.12.34",
+        "sherpa-onnx-win-ia32": "1.12.34",
+        "sherpa-onnx-win-x64": "1.12.34",
       },
     },
     "packages/shared": {
