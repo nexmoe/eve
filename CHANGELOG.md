@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.0 - 2026-03-27
+
+### Breaking Changes
+- Migrate the desktop runtime from the previous Python sidecar pipeline to a Sherpa + FFmpeg architecture, including a new audio processing flow and runtime management.
+
+### Refactor
+- Refactor the desktop runtime internals to align with the Sherpa/FFmpeg pipeline and simplify the main-process execution path.
+
+### Fixes
+- Await the macOS sign hook completion in release builds to ensure deterministic signing steps.
+- Skip entitlements for the crashpad helper in macOS signing to avoid invalid signing metadata.
+- Split macOS inherit entitlements handling from app entitlements for more stable release signing.
+- Track and apply macOS signing entitlements consistently across release artifacts.
+- Sign shared macOS runtime binaries during release packaging.
+- Drop the unsigned macOS pkg artifact from release outputs to avoid distributing invalid installers.
+
 ## 0.5.15 - 2026-03-24
 
 ### Fixes

@@ -2,6 +2,22 @@
 
 本文档记录本项目的重要变更。
 
+## 0.6.0 - 2026-03-27
+
+### 破坏性变更
+- 将桌面端运行时从原有 Python sidecar 流程迁移为 Sherpa + FFmpeg 架构，并同步调整音频处理链路与运行时管理方式。
+
+### 重构
+- 围绕 Sherpa/FFmpeg 新链路重构桌面运行时内部实现，精简主进程执行路径。
+
+### 修复
+- 在发布流程中等待 macOS sign hook 完成，确保签名步骤顺序稳定。
+- 在 macOS 签名中跳过 crashpad helper 的 entitlements，避免签名元数据异常。
+- 将 macOS inherit entitlements 与应用级 entitlements 分离处理，提升发布签名稳定性。
+- 在发布产物中统一跟踪并应用 macOS 签名 entitlements。
+- 在发布打包阶段补齐共享 macOS 运行时二进制签名。
+- 从发布产物中移除未签名的 macOS pkg，避免分发无效安装包。
+
 ## 0.5.15 - 2026-03-24
 
 ### 修复
