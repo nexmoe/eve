@@ -5,6 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS, type AppSettings } from "@eve/shared";
 
 vi.mock("electron", () => ({
+  app: {
+    getPath: (name: string) => {
+      if (name !== "documents") {
+        throw new Error(`unexpected path lookup: ${name}`);
+      }
+      return join(tmpdir(), "eve-documents-test");
+    }
+  },
   nativeTheme: {
     themeSource: "system"
   }
@@ -28,8 +36,15 @@ describe("desktop store settings", () => {
     const { nativeTheme } = await import("electron");
     const { applyTheme, getIdleStatus, getSettings, setSettings } = await import("./store");
     const expectedSettings = buildExpectedSettings(storeDir);
+    const expectedDefaultSettings: AppSettings = {
+      ...DEFAULT_SETTINGS,
+      recording: {
+        ...DEFAULT_SETTINGS.recording,
+        outputDir: join(tmpdir(), "eve-documents-test", "Eve Recorder")
+      }
+    };
 
-    expect(getSettings()).toEqual(DEFAULT_SETTINGS);
+    expect(getSettings()).toEqual(expectedDefaultSettings);
 
     const savedSettings = setSettings(expectedSettings);
     expect(savedSettings).toEqual(expectedSettings);
