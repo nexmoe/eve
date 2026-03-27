@@ -47,6 +47,11 @@ const messages = {
     modelDownloadTitle: "Model download",
     modelDownloadPreparing: "Preparing speech models…",
     modelDownloadProgress: "{percent}%",
+    modelDownloadBlockingStartTitle: "Model download in progress",
+    modelDownloadBlockingStartMessage:
+      "Recording will be available after the speech model download finishes.",
+    modelDownloadBlockingStartMessageWithDetail:
+      "Recording is unavailable while downloading: {detail}",
     ffmpegStatusTitle: "ffmpeg",
     ffmpegStatusDescription: "Required for FLAC output and non-WAV transcription.",
     ffmpegReady: "ffmpeg detected.",
@@ -169,6 +174,9 @@ const messages = {
     modelDownloadTitle: "模型下载",
     modelDownloadPreparing: "正在准备语音模型…",
     modelDownloadProgress: "{percent}%",
+    modelDownloadBlockingStartTitle: "模型下载中",
+    modelDownloadBlockingStartMessage: "语音模型下载完成后才能开始录音。",
+    modelDownloadBlockingStartMessageWithDetail: "正在下载，暂时不能开始录音：{detail}",
     ffmpegStatusTitle: "ffmpeg",
     ffmpegStatusDescription: "FLAC 输出和非 WAV 转写需要 ffmpeg。",
     ffmpegReady: "已检测到 ffmpeg。",

@@ -104,6 +104,18 @@ const getErrorMessage = (error: unknown): string => {
   return createT(snapshot.settings.desktop.language)("errorUnknown");
 };
 
+const showDownloadBlockedToast = (): void => {
+  const t = createT(snapshot.settings.desktop.language);
+  const detail = snapshot.status.downloadMessage.trim();
+  toastActions.show({
+    message:
+      detail.length > 0
+        ? t("modelDownloadBlockingStartMessageWithDetail", { detail })
+        : t("modelDownloadBlockingStartMessage"),
+    title: t("modelDownloadBlockingStartTitle")
+  });
+};
+
 const withToast = async <T>(title: string, task: () => Promise<T>): Promise<T> => {
   try {
     return await task();
@@ -175,6 +187,10 @@ export const desktopActions = {
   },
   async startRecording(): Promise<void> {
     const title = createT(snapshot.settings.desktop.language)("errorStartRecordingFailed");
+    if (snapshot.status.downloading) {
+      showDownloadBlockedToast();
+      return;
+    }
     if (snapshot.permission.state === "not-determined") {
       await desktopActions.requestPermission();
     }

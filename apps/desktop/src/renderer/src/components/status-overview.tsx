@@ -58,7 +58,15 @@ export function StatusOverview({
           >
             <Pin className="h-3.5 w-3.5" />
           </Button>
-          <Button size="sm" onClick={recording ? onStop : onStart}>
+          <Button
+            size="sm"
+            title={
+              !recording && snapshot.status.downloading
+                ? snapshot.status.downloadMessage || t("modelDownloadPreparing")
+                : undefined
+            }
+            onClick={recording ? onStop : onStart}
+          >
             {recording ? t("stopRecording") : t("startRecording")}
           </Button>
         </div>
