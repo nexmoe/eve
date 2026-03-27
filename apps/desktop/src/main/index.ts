@@ -30,6 +30,7 @@ import {
   setTrayLaunchAtLogin,
   setTrayStatus
 } from "./tray";
+import { initializeMainLogger } from "./logging";
 import { createMainWindow, positionNearTray } from "./window";
 import { initializeAutoUpdates, shutdownAutoUpdates } from "./updater";
 
@@ -191,7 +192,7 @@ const finalizeRecordingBeforeQuit = async (): Promise<void> => {
 
 const bootstrapDesktop = async (): Promise<void> => {
   if (app.isPackaged) {
-    log.initialize();
+    initializeMainLogger();
   }
   if (process.platform === "darwin" && !isE2E) {
     app.dock?.hide();
@@ -229,6 +230,16 @@ const bootstrapDesktop = async (): Promise<void> => {
         });
     });
   }
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
+    log.error("[eve] renderer failed to load", {
+      errorCode,
+      errorDescription,
+      validatedURL
+    });
+  });
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    log.error("[eve] renderer process gone", details);
+  });
   mainWindow.webContents.on("before-input-event", (_event, input) => {
     if (input.type === "keyDown" && input.key === "F12") {
       mainWindow?.webContents.openDevTools({ mode: "detach" });

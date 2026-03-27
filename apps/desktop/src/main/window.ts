@@ -1,8 +1,9 @@
-import { BrowserWindow, screen } from "electron";
+import { app, BrowserWindow, screen } from "electron";
 import { join } from "node:path";
 
 export const createMainWindow = (showOnReady: boolean): BrowserWindow => {
   const isMac = process.platform === "darwin";
+  const useGlassWindow = isMac && !app.isPackaged;
 
   const windowRef = new BrowserWindow({
     width: 420,
@@ -14,21 +15,28 @@ export const createMainWindow = (showOnReady: boolean): BrowserWindow => {
     frame: false,
     titleBarStyle: "hidden",
     trafficLightPosition: { x: 14, y: 14 },
-    transparent: isMac,
+    transparent: useGlassWindow,
     show: false,
     skipTaskbar: false,
     title: "eve",
     // macOS: native vibrancy — "popover" matches system widget panels
-    ...(isMac
+    ...(useGlassWindow
       ? {
           vibrancy: "popover" as const,
           visualEffectState: "active"
         }
-      : {
+      : !isMac
+        ? {
           // Windows 11: acrylic material for frosted glass
           backgroundMaterial: "acrylic" as const
-        }),
-    backgroundColor: "#00000000",
+        }
+        : {}
+    ),
+    backgroundColor: useGlassWindow
+      ? "#00000000"
+      : isMac
+        ? "#f6f7f9"
+        : "#ffffff",
     hasShadow: true,
     roundedCorners: true,
     webPreferences: {

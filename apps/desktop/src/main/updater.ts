@@ -1,6 +1,7 @@
 import { app } from "electron";
 import log from "electron-log/main";
 import { autoUpdater } from "electron-updater";
+import { initializeMainLogger } from "./logging";
 
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
@@ -26,7 +27,7 @@ export const initializeAutoUpdates = (): void => {
     log.info("[eve-updater] skipped update initialization in development");
     return;
   }
-  log.initialize();
+  initializeMainLogger();
   autoUpdater.logger = log;
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;

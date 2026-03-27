@@ -11,6 +11,9 @@
 - 围绕 Sherpa/FFmpeg 新链路重构桌面运行时内部实现，精简主进程执行路径。
 
 ### 修复
+- 避免在打包后的桌面端重复初始化 `electron-log` 的 preload bridge，修复 macOS 上设置窗口白屏对应的 renderer 崩溃。
+- 在打包后的 macOS 构建中关闭半透明玻璃托盘窗口样式，回退为稳定的纯色背景，降低桌面窗口渲染异常概率。
+- 在桌面主进程中补充打包态 renderer 加载失败与 renderer 进程退出日志，便于发布后的崩溃排查。
 - 在发布流程中等待 macOS sign hook 完成，确保签名步骤顺序稳定。
 - 在 macOS 签名中跳过 crashpad helper 的 entitlements，避免签名元数据异常。
 - 将 macOS inherit entitlements 与应用级 entitlements 分离处理，提升发布签名稳定性。

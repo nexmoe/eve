@@ -11,6 +11,9 @@ All notable changes to this project are documented in this file.
 - Refactor the desktop runtime internals to align with the Sherpa/FFmpeg pipeline and simplify the main-process execution path.
 
 ### Fixes
+- Avoid double-initializing the packaged `electron-log` preload bridge so the desktop renderer no longer crashes into a blank settings window on macOS.
+- Disable the translucent glass tray window style in packaged macOS builds and fall back to a solid background for more stable desktop window rendering.
+- Log packaged renderer load failures and renderer-process exits in the desktop main process to make post-release crash diagnosis easier.
 - Await the macOS sign hook completion in release builds to ensure deterministic signing steps.
 - Skip entitlements for the crashpad helper in macOS signing to avoid invalid signing metadata.
 - Split macOS inherit entitlements handling from app entitlements for more stable release signing.
