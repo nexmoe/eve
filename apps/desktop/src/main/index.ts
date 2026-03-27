@@ -158,6 +158,20 @@ const openRendererDevTools = (): void => {
   mainWindow.webContents.openDevTools({ mode: "detach" });
 };
 
+const activateAppForPermissionPrompt = (): void => {
+  mainWindow ??= createMainWindow(true);
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  positionNearTray(mainWindow, getTrayBounds());
+  mainWindow.show();
+  mainWindow.focus();
+  if (process.platform === "darwin") {
+    app.dock?.show();
+    app.focus({ steal: true });
+  }
+};
+
 const applyLoginItemSettings = (enabled: boolean): void => {
   if (isE2E) {
     return;
@@ -208,6 +222,7 @@ const ensureMicrophonePermission = async (): Promise<void> => {
   if (cachedPermission.state !== "not-determined") {
     return;
   }
+  activateAppForPermissionPrompt();
   cachedPermission = await requestMicrophonePermission();
 };
 
@@ -226,6 +241,8 @@ const bootstrapDesktop = async (): Promise<void> => {
   });
   engine.applySettings(settings);
   lastStatus = engine.getStatus();
+  const shouldShow = isE2E;
+  mainWindow = createMainWindow(shouldShow);
   await ensureMicrophonePermission();
   await getSnapshot({
     refreshDevices: true,
@@ -234,8 +251,6 @@ const bootstrapDesktop = async (): Promise<void> => {
   });
   applyLoginItemSettings(settings.desktop.launchAtLogin);
   applyTheme(settings.desktop.theme);
-  const shouldShow = isE2E;
-  mainWindow = createMainWindow(shouldShow);
   if (process.env.EVE_SMOKE_TEST === "1") {
     mainWindow.webContents.once("did-finish-load", () => {
       void mainWindow?.webContents
@@ -343,6 +358,7 @@ ipcMain.handle("desktop:open-recording-folder", async (_event, target: string) =
   await shell.openPath(target);
 });
 ipcMain.handle("desktop:request-permission", async () => {
+  activateAppForPermissionPrompt();
   const permission = isE2E
     ? cachedPermission
     : await requestMicrophonePermission();
