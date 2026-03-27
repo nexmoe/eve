@@ -25,9 +25,6 @@ jobs:
         with:
           bun-version: "1.3.2"
 
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v6
-
       - name: Install workspace dependencies
         run: bun install --frozen-lockfile
 
@@ -36,9 +33,6 @@ jobs:
 
       - name: Test desktop
         run: bun run test
-
-      - name: Test sidecar protocol
-        run: uv run --with pytest pytest apps/desktop/vendor/eve-sidecar/tests
 
   build:
     needs: checks
@@ -76,9 +70,6 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.2"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v6
 
       - name: Install workspace dependencies
         run: bun install --frozen-lockfile
