@@ -7,34 +7,24 @@ const { signApp } = require(path.join(
   "node_modules/.bun/node_modules/@electron/osx-sign"
 ));
 
-const resourceExtensionsWithoutEntitlements = new Set([".pak"]);
-const shouldStripEntitlements = (filePath) => {
+const ignoredResourceExtensions = new Set([".pak"]);
+const shouldIgnoreResource = (filePath) => {
   const extension = path.extname(filePath).toLowerCase();
-  return (
-    resourceExtensionsWithoutEntitlements.has(extension)
-  );
+  return ignoredResourceExtensions.has(extension);
 };
 
 module.exports = async function macosSign(configuration) {
-  const originalOptionsForFile = configuration.optionsForFile;
+  const originalIgnore = configuration.ignore;
+
+  const ignore = Array.isArray(originalIgnore)
+    ? [...originalIgnore]
+    : originalIgnore
+      ? [originalIgnore]
+      : [];
+  ignore.push((filePath) => shouldIgnoreResource(filePath));
 
   await signApp({
     ...configuration,
-    optionsForFile(filePath) {
-      const perFileOptions = originalOptionsForFile
-        ? originalOptionsForFile(filePath)
-        : null;
-
-      if (!shouldStripEntitlements(filePath)) {
-        return perFileOptions;
-      }
-
-      return {
-        ...(perFileOptions ?? {}),
-        additionalArguments: [],
-        entitlements: [],
-        hardenedRuntime: false
-      };
-    }
+    ignore
   });
 };
