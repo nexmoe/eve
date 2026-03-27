@@ -77,10 +77,6 @@ jobs:
       - name: Patch isbinaryfile
         run: node ./scripts/patch-isbinaryfile.mjs
 
-      - name: Mark POSIX wrapper executable
-        if: runner.os != 'Windows'
-        run: chmod +x apps/desktop/resources/bin/eve
-
       - name: Build desktop package
         shell: bash
         working-directory: apps/desktop
@@ -140,7 +136,7 @@ jobs:
             fi
           fi
           bun run build
-          bun run prepare:shared-runtime
+          bun run prepare:sherpa-runtime
           if (( ${#extra_args[@]} )); then
             bunx electron-builder "${MATRIX_BUILD_TARGET}" --publish never "${extra_args[@]}"
           else
