@@ -87,6 +87,16 @@ const rejectBridgeCall = async <T>(): Promise<T> => {
   throw new Error(createT(snapshot.settings.desktop.language)("errorBridgeUnavailable"));
 };
 
+const requestBrowserMicrophonePermission = async (): Promise<void> => {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return;
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach((track) => {
+    track.stop();
+  });
+};
+
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -130,8 +140,18 @@ export const desktopActions = {
     );
   },
   async requestPermission(): Promise<MicrophonePermissionStatus> {
-    const permission = await withToast(createT(snapshot.settings.desktop.language)("errorRequestPermissionFailed"), () =>
-      bridge?.requestMicrophonePermission() ?? rejectBridgeCall()
+    const permission = await withToast(
+      createT(snapshot.settings.desktop.language)("errorRequestPermissionFailed"),
+      async () => {
+        const requested = await (bridge?.requestMicrophonePermission() ?? rejectBridgeCall());
+        if (requested.state === "authorized") {
+          return requested;
+        }
+        await requestBrowserMicrophonePermission();
+        const refreshed = await (bridge?.bootstrap() ?? rejectBridgeCall());
+        updateSnapshot(refreshed);
+        return refreshed.permission;
+      }
     );
     updateSnapshot({ ...snapshot, permission });
     return permission;
@@ -155,6 +175,9 @@ export const desktopActions = {
   },
   async startRecording(): Promise<void> {
     const title = createT(snapshot.settings.desktop.language)("errorStartRecordingFailed");
+    if (snapshot.permission.state === "not-determined") {
+      await desktopActions.requestPermission();
+    }
     const nextSnapshot = await withToast(title, () =>
       bridge?.startRecording() ?? rejectBridgeCall()
     );
