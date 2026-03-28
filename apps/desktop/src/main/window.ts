@@ -1,5 +1,8 @@
-import { app, BrowserWindow, screen } from "electron";
+import { app, BrowserWindow, nativeImage, screen } from "electron";
 import { join } from "node:path";
+
+const WINDOW_TITLE = "Eve Recorder";
+const WINDOW_ICON_PATH = join(import.meta.dirname, "../../resources/icon.png");
 
 export const createMainWindow = (showOnReady: boolean): BrowserWindow => {
   const isMac = process.platform === "darwin";
@@ -18,7 +21,8 @@ export const createMainWindow = (showOnReady: boolean): BrowserWindow => {
     transparent: useGlassWindow,
     show: false,
     skipTaskbar: false,
-    title: "eve",
+    title: WINDOW_TITLE,
+    ...(isMac ? {} : { icon: nativeImage.createFromPath(WINDOW_ICON_PATH) }),
     // macOS: native vibrancy — "popover" matches system widget panels
     ...(useGlassWindow
       ? {
@@ -57,6 +61,17 @@ export const createMainWindow = (showOnReady: boolean): BrowserWindow => {
     void windowRef.loadFile(join(import.meta.dirname, "../renderer/index.html"));
   }
   return windowRef;
+};
+
+export const positionWindowForReveal = (
+  windowRef: BrowserWindow,
+  trayBounds: Electron.Rectangle | null
+): void => {
+  if (process.platform === "win32") {
+    windowRef.center();
+    return;
+  }
+  positionNearTray(windowRef, trayBounds);
 };
 
 /**

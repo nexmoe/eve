@@ -31,7 +31,7 @@ import {
   setTrayStatus
 } from "./tray";
 import { initializeMainLogger } from "./logging";
-import { createMainWindow, positionNearTray } from "./window";
+import { createMainWindow, positionWindowForReveal } from "./window";
 import {
   getAutoUpdateSnapshot,
   initializeAutoUpdates,
@@ -141,18 +141,25 @@ const emitSnapshot = async (
   mainWindow.webContents.send("desktop:snapshot", snapshot);
 };
 
+const revealMainWindow = (): BrowserWindow => {
+  mainWindow ??= createMainWindow(true);
+  const windowRef = mainWindow;
+  if (windowRef.isMinimized()) {
+    windowRef.restore();
+  }
+  windowRef.setVisibleOnAllWorkspaces(false);
+  positionWindowForReveal(windowRef, getTrayBounds());
+  windowRef.show();
+  windowRef.focus();
+  return windowRef;
+};
+
 const toggleMainWindow = (): void => {
-  if (mainWindow?.isVisible()) {
+  if (mainWindow?.isVisible() && mainWindow.isFocused()) {
     mainWindow.hide();
     return;
   }
-  mainWindow ??= createMainWindow(true);
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
-  }
-  positionNearTray(mainWindow, getTrayBounds());
-  mainWindow.show();
-  mainWindow.focus();
+  revealMainWindow();
   void getSnapshot({
     refreshDevices: true,
     refreshHistory: true,
@@ -161,24 +168,11 @@ const toggleMainWindow = (): void => {
 };
 
 const openRendererDevTools = (): void => {
-  mainWindow ??= createMainWindow(true);
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
-  }
-  positionNearTray(mainWindow, getTrayBounds());
-  mainWindow.show();
-  mainWindow.focus();
-  mainWindow.webContents.openDevTools({ mode: "detach" });
+  revealMainWindow().webContents.openDevTools({ mode: "detach" });
 };
 
 const activateAppForPermissionPrompt = (): void => {
-  mainWindow ??= createMainWindow(true);
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
-  }
-  positionNearTray(mainWindow, getTrayBounds());
-  mainWindow.show();
-  mainWindow.focus();
+  revealMainWindow();
   if (process.platform === "darwin") {
     app.dock?.show();
     app.focus({ steal: true });
@@ -453,6 +447,10 @@ if (!isE2E && !app.requestSingleInstanceLock()) {
 
 app.whenReady().then(async () => {
   try {
+    app.setName("Eve Recorder");
+    if (process.platform === "win32") {
+      app.setAppUserModelId("build.nexmoe.everecorder.desktop");
+    }
     await bootstrapDesktop();
   } catch (error) {
     console.error("[eve] failed to bootstrap desktop", error);
@@ -461,10 +459,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("second-instance", () => {
-  mainWindow ??= createMainWindow(true);
-  positionNearTray(mainWindow, getTrayBounds());
-  mainWindow.show();
-  mainWindow.focus();
+  revealMainWindow();
 });
 
 app.on("window-all-closed", () => {

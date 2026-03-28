@@ -89,8 +89,8 @@ const syncTray = (): void => {
   }
   trayState.tray.setToolTip(
     trayState.status.recording
-      ? `eve 正在录音 · ${trayState.status.elapsed}`
-      : "eve 在后台待命"
+      ? `Eve Recorder 正在录音 · ${trayState.status.elapsed}`
+      : "Eve Recorder 在后台待命"
   );
 };
 

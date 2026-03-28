@@ -1,8 +1,8 @@
 {
   "name": "eve-desktop",
-  "productName": "eve",
+  "productName": "Eve Recorder",
   "version": "0.8.0",
-  "description": "Desktop app for eve.",
+  "description": "Desktop app for Eve Recorder.",
   "author": "nexmoe",
   "private": true,
   "type": "module",
