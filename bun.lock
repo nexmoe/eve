@@ -7,7 +7,7 @@
     },
     "apps/desktop": {
       "name": "eve-desktop",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@eve/shared": "workspace:*",
         "@radix-ui/react-scroll-area": "^1.2.9",

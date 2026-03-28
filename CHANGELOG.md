@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.7.0 - 2026-03-28
+
+### Features
+- Make desktop `applySettings` asynchronous: rotate recording segments when format, output path, or ASR settings change, and recreate the recognizer when language or ASR-disable toggles change.
+- When ASR is disabled, use a null JSON path, skip JSON writes, and clear ASR preview and history; track pending settings in the renderer store during save to avoid races on rapid saves.
+- Add DesktopEngine unit tests covering ASR-disable sidecar behavior.
+
+### Maintenance
+- Bump `actions/checkout` and `actions/setup-node` to v5 in the desktop release workflow.
+
 ## 0.6.0 - 2026-03-27
 
 ### Breaking Changes
