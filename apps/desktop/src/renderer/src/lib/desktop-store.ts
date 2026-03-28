@@ -17,12 +17,27 @@ const defaultPermission = (): MicrophonePermissionStatus => ({
 });
 
 let snapshot: DesktopSnapshot = {
+  app: {
+    name: "eve",
+    repositoryUrl: "https://github.com/nexmoe/eve",
+    version: "0.0.0"
+  },
   devices: [],
   engineReady: false,
   history: [],
   permission: defaultPermission(),
   settings: DEFAULT_SETTINGS,
   status: DEFAULT_STATUS,
+  updater: {
+    currentVersion: "0.0.0",
+    downloadedVersion: null,
+    downloadedVersionReady: false,
+    errorMessage: null,
+    installDeferredUntilIdle: false,
+    latestVersion: null,
+    phase: "idle",
+    statusMessage: "Automatic updates are ready."
+  },
   windowPinned: false
 };
 

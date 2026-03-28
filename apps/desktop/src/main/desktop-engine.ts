@@ -163,7 +163,7 @@ export class DesktopEngine {
       return;
     }
     await this.waitForPendingAudio();
-    this.flushVad();
+    await this.flushVad();
     await this.closeSegment();
     this.vad = null;
     this.segment = null;
@@ -230,7 +230,6 @@ export class DesktopEngine {
       await this.rotateSegment(payload.deviceLabel);
     }
     const samples = downsampleTo16k(payload.samples, payload.sampleRate);
-    await this.segment.writer.append(samples);
     this.patchStatus({
       db: rmsToDb(payload.rms),
       deviceLabel: payload.deviceLabel || this.segment.deviceLabel,
@@ -239,12 +238,13 @@ export class DesktopEngine {
       rms: payload.rms,
       waveformBins: buildWaveformBins(samples)
     });
-    if (!this.settings.recording.disableAsr && this.shouldThrottleAsr()) {
+    let decodeSegments = !this.settings.recording.disableAsr;
+    if (decodeSegments && this.shouldThrottleAsr()) {
       this.skippedAsrChunks += 1;
       this.logDiagnostics("audio-backpressure");
-      return;
+      decodeSegments = false;
     }
-    this.consumeVadSamples(samples, { decodeSegments: !this.settings.recording.disableAsr });
+    await this.consumeVadSamples(samples, { decodeSegments });
   }
 
   async runTranscribe(inputDirectory: string): Promise<void> {
@@ -302,10 +302,10 @@ export class DesktopEngine {
     return files.flat().sort();
   }
 
-  private consumeVadSamples(
+  private async consumeVadSamples(
     samples: Float32Array,
     { decodeSegments }: { decodeSegments: boolean }
-  ): void {
+  ): Promise<void> {
     if (!this.vad) {
       return;
     }
@@ -318,23 +318,27 @@ export class DesktopEngine {
       this.vad.acceptWaveform(combined.subarray(offset, offset + windowSize));
       offset += windowSize;
       this.patchStatus({ inSpeech: this.vad.isDetected() });
-      this.drainVadSegments({ decodeSegments });
+      await this.drainVadSegments({ decodeSegments });
     }
     this.vadRemainder = combined.subarray(offset);
   }
 
-  private drainVadSegments({
+  private async drainVadSegments({
     decodeSegments
   }: {
     decodeSegments: boolean;
-  }): void {
+  }): Promise<void> {
     if (!this.vad) {
       return;
     }
     while (!this.vad.isEmpty()) {
       const vadSegment = this.vad.front(false);
       this.vad.pop();
-      if (!decodeSegments || !this.recognizer || !this.segment) {
+      if (!this.segment) {
+        continue;
+      }
+      await this.segment.writer.append(vadSegment.samples);
+      if (!decodeSegments || !this.recognizer) {
         continue;
       }
       const result = decodeSegment(this.recognizer, vadSegment.samples);
@@ -354,7 +358,7 @@ export class DesktopEngine {
     }
   }
 
-  private flushVad(): void {
+  private async flushVad(): Promise<void> {
     if (!this.vad) {
       return;
     }
@@ -365,7 +369,7 @@ export class DesktopEngine {
       this.vadRemainder = new Float32Array(0);
     }
     this.vad.flush();
-    this.drainVadSegments({ decodeSegments: !this.settings.recording.disableAsr });
+    await this.drainVadSegments({ decodeSegments: !this.settings.recording.disableAsr });
   }
 
   private shouldRotateSegment(): boolean {
@@ -376,6 +380,7 @@ export class DesktopEngine {
   }
 
   private async rotateSegment(deviceLabel: string): Promise<void> {
+    await this.flushVad();
     await this.closeSegment();
     this.segment = await this.openSegment(deviceLabel);
     this.patchStatus({

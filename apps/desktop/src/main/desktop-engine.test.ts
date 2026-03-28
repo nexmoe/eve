@@ -19,6 +19,7 @@ const writerClose = vi.fn<() => Promise<void>>(async () => {});
 const writerAppend = vi.fn<(samples: Float32Array) => Promise<void>>(async () => {});
 const transcodeWavToFlac = vi.fn<(inputPath: string, outputPath: string) => Promise<void>>(async () => {});
 const writeJsonAtomic = vi.fn<(path: string, payload: unknown) => Promise<void>>(async () => {});
+const vadSegments: Array<{ samples: Float32Array; start: number }> = [];
 
 vi.mock("electron-log/main", () => ({
   default: { error: vi.fn(), info: vi.fn() }
@@ -37,10 +38,12 @@ vi.mock("./audio-utils", () => ({
     acceptWaveform: vi.fn(),
     config: { sileroVad: { windowSize: 512 } },
     flush: vi.fn(),
-    front: vi.fn(),
+    front: vi.fn(() => vadSegments[0]!),
     isDetected: vi.fn(() => false),
-    isEmpty: vi.fn(() => true),
-    pop: vi.fn()
+    isEmpty: vi.fn(() => vadSegments.length === 0),
+    pop: vi.fn(() => {
+      vadSegments.shift();
+    })
   })),
   decodeSegment: vi.fn(() => ({ text: "" })),
   downsampleTo16k: vi.fn((samples: Float32Array) => samples),
@@ -67,6 +70,7 @@ describe("DesktopEngine", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     modelManagerState.onStatus.mockImplementation(() => {});
+    vadSegments.length = 0;
   });
 
   it("skips sidecar JSON creation when realtime transcription is disabled", async () => {
@@ -110,6 +114,27 @@ describe("DesktopEngine", () => {
     const firstCall = writeJsonAtomic.mock.calls.at(0);
     expect(firstCall).toBeDefined();
     expect(String(firstCall?.[0])).toContain("/tmp/recordings-a/");
+  });
+
+  it("persists only VAD speech segments into the saved audio file", async () => {
+    const { DesktopEngine } = await import("./desktop-engine");
+    const engine = new DesktopEngine(() => {});
+    const speechOnly = new Float32Array([0.2, -0.2, 0.4]);
+
+    vadSegments.push({ samples: speechOnly, start: 0 });
+
+    await engine.startRecording();
+    await engine.pushAudioChunk({
+      deviceId: "default",
+      deviceLabel: "Built-in Mic",
+      rms: 0.3,
+      sampleRate: 16_000,
+      samples: new Float32Array(512)
+    });
+    await engine.stopRecording();
+
+    expect(writerAppend).toHaveBeenCalledTimes(1);
+    expect(writerAppend).toHaveBeenCalledWith(speechOnly);
   });
 });
 

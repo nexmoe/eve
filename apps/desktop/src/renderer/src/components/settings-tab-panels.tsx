@@ -2,13 +2,14 @@ import type { ChangeEvent } from "react";
 import type {
   AppLanguage,
   AppSettings,
+  AutoUpdateSnapshot,
   AudioFormat,
   DesktopSnapshot,
   ThemeMode
 } from "@eve/shared";
 import type { MessageKey } from "@/lib/i18n";
 import { desktopActions } from "@/lib/desktop-store";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Github, Star } from "lucide-react";
 import { SettingField } from "@/components/setting-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,6 +104,39 @@ export function GeneralTab({
         description={t("segmentMinutesDescription")}
         title={t("segmentMinutesTitle")}
       />
+      <SettingField
+        control={
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-xs leading-5 text-[color:var(--foreground)]">
+              <div className="font-medium">{options.appVersionLabel}</div>
+              <div className="text-[color:var(--muted)]">{options.updateStatusLabel}</div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="subtle" onClick={() => void desktopActions.openExternal(options.repositoryUrl)}>
+                <Star className="h-3.5 w-3.5" />
+                {t("githubStarAction")}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => void desktopActions.openExternal(`${options.repositoryUrl}/releases`)}>
+                <Github className="h-3.5 w-3.5" />
+                {t("githubReleasesAction")}
+              </Button>
+            </div>
+          </div>
+        }
+        description={t("appVersionDescription")}
+        layout="stacked"
+        title={t("appVersionTitle")}
+      />
+      <SettingField
+        control={
+          <Button size="sm" variant="subtle" onClick={() => void desktopActions.openExternal(options.repositoryUrl)}>
+            <Star className="h-3.5 w-3.5" />
+            {t("githubStarAction")}
+          </Button>
+        }
+        description={t("githubStarDescription")}
+        title={t("githubStarTitle")}
+      />
     </div>
   );
 }
@@ -185,6 +219,7 @@ export function TranscribeTab({
 
 export function buildSettingsOptions(snapshot: DesktopSnapshot, t: Translator) {
   return {
+    appVersionLabel: `${snapshot.app.name} v${snapshot.app.version}`,
     languageOptions: [
       { label: t("languageSystem"), value: "system" },
       { label: t("languageZhCn"), value: "zh-CN" },
@@ -213,8 +248,39 @@ export function buildSettingsOptions(snapshot: DesktopSnapshot, t: Translator) {
       { label: t("languageNameJapanese"), value: "ja" },
       { label: t("languageNameKorean"), value: "ko" }
     ] satisfies SelectOption<string>[],
-    segmentOptions: numberOptions([15, 30, 45, 60, 90, 120])
+    repositoryUrl: snapshot.app.repositoryUrl,
+    segmentOptions: numberOptions([15, 30, 45, 60, 90, 120]),
+    updateStatusLabel: formatUpdateStatus(snapshot.updater, t)
   };
+}
+
+function formatUpdateStatus(updater: AutoUpdateSnapshot, t: Translator): string {
+  if (updater.phase === "checking") {
+    return t("updateStatusChecking");
+  }
+  if (updater.phase === "downloading") {
+    return t("updateStatusDownloading", {
+      version: updater.latestVersion ?? updater.currentVersion
+    });
+  }
+  if (updater.phase === "downloaded") {
+    const version = updater.downloadedVersion ?? updater.latestVersion ?? updater.currentVersion;
+    return t(
+      updater.installDeferredUntilIdle
+        ? "updateStatusDownloadedDeferred"
+        : "updateStatusDownloadedAuto",
+      { version }
+    );
+  }
+  if (updater.phase === "error") {
+    return t("updateStatusError", {
+      message: updater.errorMessage ?? updater.statusMessage
+    });
+  }
+  if (updater.phase === "unavailable") {
+    return t("updateStatusUnavailable");
+  }
+  return t("updateStatusIdle");
 }
 
 function SelectField<T extends string>({

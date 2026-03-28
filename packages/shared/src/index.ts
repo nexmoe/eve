@@ -87,6 +87,31 @@ export interface RecordingHistoryItem {
   textPreview: string;
 }
 
+export interface AppInfoSnapshot {
+  name: string;
+  repositoryUrl: string;
+  version: string;
+}
+
+export type AutoUpdatePhase =
+  | "checking"
+  | "downloaded"
+  | "downloading"
+  | "error"
+  | "idle"
+  | "unavailable";
+
+export interface AutoUpdateSnapshot {
+  currentVersion: string;
+  downloadedVersion: string | null;
+  downloadedVersionReady: boolean;
+  errorMessage: string | null;
+  installDeferredUntilIdle: boolean;
+  latestVersion: string | null;
+  phase: AutoUpdatePhase;
+  statusMessage: string;
+}
+
 export type SidecarRequest =
   | { id: string; method: "devices.list" }
   | { id: string; method: "recording.start" }
@@ -112,12 +137,14 @@ export type SidecarEvent =
   | { type: "waveform"; payload: { bins: number[]; deviceLabel: string } };
 
 export interface DesktopSnapshot {
+  app: AppInfoSnapshot;
   devices: DeviceInfo[];
   engineReady: boolean;
   history: RecordingHistoryItem[];
   permission: MicrophonePermissionStatus;
   settings: AppSettings;
   status: RecorderStatusSnapshot;
+  updater: AutoUpdateSnapshot;
   windowPinned: boolean;
 }
 

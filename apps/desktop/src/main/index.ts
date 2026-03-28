@@ -32,9 +32,16 @@ import {
 } from "./tray";
 import { initializeMainLogger } from "./logging";
 import { createMainWindow, positionNearTray } from "./window";
-import { initializeAutoUpdates, shutdownAutoUpdates } from "./updater";
+import {
+  getAutoUpdateSnapshot,
+  initializeAutoUpdates,
+  installDownloadedUpdateIfReady,
+  isAutoUpdateInstalling,
+  shutdownAutoUpdates
+} from "./updater";
 
 const isE2E = process.env.EVE_E2E_TEST === "1";
+const REPOSITORY_URL = "https://github.com/nexmoe/eve";
 
 type DesktopEngineLike = Pick<
   DesktopEngine,
@@ -72,12 +79,18 @@ const errorMessage = (error: unknown): string =>
 const buildSnapshot = (): DesktopSnapshot => {
   const settings = getSettings();
   return {
+    app: {
+      name: app.getName(),
+      repositoryUrl: REPOSITORY_URL,
+      version: app.getVersion()
+    },
     devices: cachedDevices,
     engineReady: engine?.getReady() ?? false,
     history: cachedHistory,
     permission: cachedPermission,
     settings,
     status: lastStatus,
+    updater: getAutoUpdateSnapshot(),
     windowPinned: isWindowPinned
   };
 };
@@ -308,7 +321,10 @@ const bootstrapDesktop = async (): Promise<void> => {
           .then(() => getSnapshot({ refreshHistory: true }).then(emitSnapshot));
       },
       onStopRecording: () => {
-        void engine?.stopRecording().then(() => getSnapshot({ refreshHistory: true }).then(emitSnapshot));
+        void engine?.stopRecording().then(() => {
+          installDownloadedUpdateIfReady();
+          return getSnapshot({ refreshHistory: true }).then(emitSnapshot);
+        });
       },
       onToggleLaunchAtLogin: () => {
         const nextSettings: AppSettings = {
@@ -332,7 +348,12 @@ const bootstrapDesktop = async (): Promise<void> => {
     }
   }
   if (!isE2E) {
-    initializeAutoUpdates();
+    initializeAutoUpdates({
+      deferInstallWhen: () => lastStatus.recording,
+      onSnapshot: () => {
+        void emitSnapshot(buildSnapshot(), { force: true });
+      }
+    });
   }
 };
 
@@ -386,6 +407,7 @@ ipcMain.handle("desktop:start-recording", async () => {
 });
 ipcMain.handle("desktop:stop-recording", async () => {
   await engine?.stopRecording();
+  installDownloadedUpdateIfReady();
   return getSnapshot({ refreshHistory: true });
 });
 ipcMain.handle("desktop:run-transcribe", async (_event, inputDir: string) => {
@@ -456,6 +478,9 @@ app.on("before-quit", (event) => {
   if (!isE2E) {
     destroyTray();
     shutdownAutoUpdates();
+  }
+  if (isAutoUpdateInstalling()) {
+    return;
   }
   if (quitAfterRecordingFinalize || !lastStatus.recording) {
     return;
