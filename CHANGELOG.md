@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.1 - 2026-03-28
+
+### Fixes
+- Hide the main window from the tray toggle only when it is visible and focused; otherwise reveal and focus it.
+- On Windows, center the window on reveal, set a distinct App User Model ID, and use the packaged window icon on non-macOS.
+
+### Features
+- Rebrand the desktop app display name to Eve Recorder across the bundle metadata, window title, tray tooltips, and microphone permission strings.
+
 ## 0.8.0 - 2026-03-28
 
 ### Features
