@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.0 - 2026-03-28
+
+### Features
+- VAD-only recording: append only VAD speech segments to saved audio, awaiting flush and drain on stop and segment rotation.
+- Keep the VAD pipeline aligned with ASR throttling without decoding throttled segments.
+- Add `AppInfoSnapshot` and `AutoUpdateSnapshot` to `DesktopSnapshot` from the main process.
+- Track auto-update phase, defer install while recording, and install after recording stops.
+- General settings: version and update status plus GitHub star and releases actions.
+
 ## 0.7.0 - 2026-03-28
 
 ### Features
