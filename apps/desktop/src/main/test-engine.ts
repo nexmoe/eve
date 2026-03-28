@@ -42,7 +42,7 @@ export class TestDesktopEngine {
     this.onStatus = onStatus;
   }
 
-  applySettings(settings: AppSettings): void {
+  async applySettings(settings: AppSettings): Promise<void> {
     this.settings = settings;
     this.patchStatus({
       asrEnabled: !settings.recording.disableAsr,

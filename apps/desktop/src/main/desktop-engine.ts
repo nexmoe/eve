@@ -1,13 +1,7 @@
 import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import log from "electron-log/main";
-import {
-  DEFAULT_SETTINGS,
-  DEFAULT_STATUS,
-  type AppSettings,
-  type DeviceInfo,
-  type RecorderStatusSnapshot
-} from "@eve/shared";
+import { DEFAULT_SETTINGS, DEFAULT_STATUS, type AppSettings, type DeviceInfo, type RecorderStatusSnapshot } from "@eve/shared";
 import {
   WavWriter,
   buildWaveformBins,
@@ -36,7 +30,7 @@ interface RecordingSegment {
   audioPath: string;
   createdAt: string;
   deviceLabel: string;
-  jsonPath: string;
+  jsonPath: string | null;
   startedAt: Date;
   texts: string[];
   wavPath: string;
@@ -75,34 +69,51 @@ export class DesktopEngine {
 
   constructor(onStatus: StatusListener) {
     this.onStatus = onStatus;
-    this.modelManager.onStatus((assetStatus) => {
-      this.patchStatus(assetStatus);
-    });
+    this.modelManager.onStatus((assetStatus) => this.patchStatus(assetStatus));
   }
 
-  applySettings(settings: AppSettings): void {
+  async applySettings(settings: AppSettings): Promise<void> {
+    const previous = this.settings;
     this.settings = settings;
+    if (
+      this.recognizer &&
+      (previous.recording.asrLanguage !== settings.recording.asrLanguage ||
+        previous.recording.disableAsr !== settings.recording.disableAsr)
+    ) {
+      this.recognizer = settings.recording.disableAsr
+        ? null
+        : createSenseVoiceRecognizer(
+            this.modelManager.getSenseVoiceDirectory(),
+            settings.recording.asrLanguage
+          );
+    }
+    if (
+      this.status.recording &&
+      this.segment &&
+      (previous.recording.audioFormat !== settings.recording.audioFormat ||
+        previous.recording.outputDir !== settings.recording.outputDir ||
+        previous.recording.disableAsr !== settings.recording.disableAsr)
+    ) {
+      if (settings.recording.audioFormat === "flac") {
+        await this.modelManager.requireFfmpeg();
+      }
+      await this.rotateSegment(this.segment.deviceLabel);
+    }
     this.patchStatus({
       asrEnabled: !settings.recording.disableAsr,
+      asrHistory: settings.recording.disableAsr ? [] : this.status.asrHistory,
+      asrPreview: settings.recording.disableAsr ? "" : this.status.asrPreview,
       autoSwitchEnabled: settings.recording.autoSwitchDevice
     });
   }
 
-  getDevices(): DeviceInfo[] {
-    return this.devices;
-  }
+  getDevices(): DeviceInfo[] { return this.devices; }
 
-  getReady(): boolean {
-    return this.status.senseVoiceReady && this.status.vadReady && !this.status.downloading;
-  }
+  getReady(): boolean { return this.status.senseVoiceReady && this.status.vadReady && !this.status.downloading; }
 
-  getStatus(): RecorderStatusSnapshot {
-    return { ...this.status };
-  }
+  getStatus(): RecorderStatusSnapshot { return { ...this.status }; }
 
-  updateDevices(devices: DeviceInfo[]): void {
-    this.devices = devices;
-  }
+  updateDevices(devices: DeviceInfo[]): void { this.devices = devices; }
 
   reportCaptureError(error: string): void {
     this.patchStatus({
@@ -386,7 +397,9 @@ export class DesktopEngine {
       audioPath: wavPath,
       createdAt: now.toISOString(),
       deviceLabel: deviceLabel || this.status.deviceLabel || "default",
-      jsonPath: join(outputDirectory, `${baseName}.json`),
+      jsonPath: this.settings.recording.disableAsr
+        ? null
+        : join(outputDirectory, `${baseName}.json`),
       startedAt: now,
       texts: [],
       wavPath,
@@ -406,6 +419,9 @@ export class DesktopEngine {
       finalAudioPath = current.wavPath.replace(/\.wav$/i, ".flac");
       await transcodeWavToFlac(current.wavPath, finalAudioPath);
       await rm(current.wavPath, { force: true });
+    }
+    if (!current.jsonPath) {
+      return;
     }
     await writeJsonAtomic(current.jsonPath, {
       audio_file: basename(finalAudioPath),
@@ -433,12 +449,8 @@ export class DesktopEngine {
   }
 
   private async waitForPendingAudio(): Promise<void> {
-    if (!this.processingAudioQueue && this.pendingAudioChunks.length === 0) {
-      return;
-    }
-    await new Promise<void>((resolve) => {
-      this.queueIdleWaiters.add(resolve);
-    });
+    if (!this.processingAudioQueue && this.pendingAudioChunks.length === 0) return;
+    await new Promise<void>((resolve) => this.queueIdleWaiters.add(resolve));
   }
 
   private elapsedLabel(): string {
@@ -459,10 +471,7 @@ export class DesktopEngine {
   }
 
   private patchStatus(patch: Partial<RecorderStatusSnapshot>): void {
-    this.status = {
-      ...this.status,
-      ...patch
-    };
+    this.status = { ...this.status, ...patch };
     this.onStatus(this.getStatus());
   }
 

@@ -30,6 +30,7 @@ const listeners = new Set<() => void>();
 const bridge = window.eve;
 let saveSequence = 0;
 let lastStatusError: string | null = null;
+let pendingSettings: AppSettings | null = null;
 
 const publish = (): void => {
   for (const listener of listeners) {
@@ -170,11 +171,13 @@ export const desktopActions = {
   },
   async saveSettings(settings: AppSettings): Promise<void> {
     const requestId = ++saveSequence;
-    updateSnapshot({ ...snapshot, settings });
+    pendingSettings = settings;
+    updateSnapshot({ ...snapshot, settings: pendingSettings });
     const saved = await withToast(createT(settings.desktop.language)("errorSaveSettingsFailed"), () =>
-      bridge?.saveSettings(settings) ?? rejectBridgeCall()
+      bridge?.saveSettings(pendingSettings ?? settings) ?? rejectBridgeCall()
     );
     if (requestId === saveSequence) {
+      pendingSettings = null;
       updateSnapshot({ ...snapshot, settings: saved });
     }
   },

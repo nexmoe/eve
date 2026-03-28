@@ -239,7 +239,7 @@ const bootstrapDesktop = async (): Promise<void> => {
     setTrayStatus(lastStatus);
     void emitSnapshot(buildSnapshot(), { force: true });
   });
-  engine.applySettings(settings);
+  await engine.applySettings(settings);
   lastStatus = engine.getStatus();
   const shouldShow = isE2E;
   mainWindow = createMainWindow(shouldShow);
@@ -370,7 +370,7 @@ ipcMain.handle("desktop:save-settings", async (_event, settings: AppSettings) =>
   const saved = setSettings(settings);
   applyLoginItemSettings(saved.desktop.launchAtLogin);
   applyTheme(saved.desktop.theme);
-  engine?.applySettings(saved);
+  await engine?.applySettings(saved);
   await emitSnapshot(
     await getSnapshot({
       refreshDevices: true,
