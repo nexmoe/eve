@@ -69,7 +69,7 @@ input {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 2.5rem 0 1rem;
+  padding: 4.75rem 0 1rem;
   animation: tray-panel-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -97,6 +97,111 @@ input {
   height: 38px;
   -webkit-app-region: drag;
   z-index: 50;
+}
+
+.home-github-star {
+  position: fixed;
+  top: 0.8rem;
+  right: 1rem;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 0.65rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 0.95rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, white 8%), color-mix(in srgb, var(--surface) 88%, transparent)),
+    color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 color-mix(in srgb, var(--highlight) 85%, transparent);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+}
+
+.windows-window-controls {
+  position: fixed;
+  top: 0.8rem;
+  right: 1rem;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.windows-window-control {
+  width: 2rem;
+  padding-inline: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(1.05);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+}
+
+.windows-window-control--danger:hover {
+  background: color-mix(in srgb, #df3c30 24%, var(--surface));
+  color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+  .windows-window-control--danger:hover {
+    background: color-mix(in srgb, #ff5f57 30%, var(--surface));
+  }
+}
+
+body[data-platform="win32"] .home-github-star {
+  right: 5.75rem;
+}
+
+.home-github-star__icon {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+  color: var(--foreground);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--highlight) 65%, transparent);
+}
+
+.home-github-star__label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.home-github-star__hint {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.63rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 520px) {
+  .home-github-star {
+    top: 0.65rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+  }
+
+  .home-github-star__hint {
+    display: none;
+  }
+
+  body[data-platform="win32"] .home-github-star {
+    right: 5.15rem;
+    left: 0.75rem;
+  }
+
+  .windows-window-controls {
+    top: 0.65rem;
+    right: 0.75rem;
+  }
 }
 
 /* Prevent drag on interactive elements */
@@ -153,10 +258,17 @@ a {
 
 .metric-cell {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   min-width: 0;
+}
+
+.metric-copy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .metric-label-compact {
@@ -164,8 +276,8 @@ a {
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.2;
+  white-space: normal;
 }
 
 .metric-value-compact {
@@ -173,6 +285,7 @@ a {
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 /* Eyebrow label */

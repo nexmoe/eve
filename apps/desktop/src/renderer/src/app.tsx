@@ -5,6 +5,8 @@ import { StatusOverview } from "@/components/status-overview";
 import { SettingsTabs } from "@/components/settings-tabs";
 import { ToastViewport } from "@/components/ui/toast";
 import { CaptureController } from "@/components/capture-controller";
+import { HomeGithubStar } from "@/components/home-github-star";
+import { WindowsWindowControls } from "@/components/windows-window-controls";
 
 export function App() {
   const snapshot = useDesktopSnapshot();
@@ -16,6 +18,8 @@ export function App() {
       <div className="drag-region" />
       <ToastViewport />
       <CaptureController snapshot={snapshot} onStreamChange={setSharedStream} />
+      <WindowsWindowControls snapshot={snapshot} />
+      <HomeGithubStar snapshot={snapshot} />
 
       <ScrollArea className="h-screen w-full">
         <div className="tray-panel min-w-0 max-w-full overflow-x-hidden">

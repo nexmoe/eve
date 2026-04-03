@@ -145,6 +145,16 @@ const withToast = async <T>(title: string, task: () => Promise<T>): Promise<T> =
 };
 
 export const desktopActions = {
+  async closeWindow(): Promise<void> {
+    await withToast(createT(snapshot.settings.desktop.language)("errorUpdateWindowStateFailed"), () =>
+      bridge?.closeWindow() ?? rejectBridgeCall()
+    );
+  },
+  async minimizeWindow(): Promise<void> {
+    await withToast(createT(snapshot.settings.desktop.language)("errorUpdateWindowStateFailed"), () =>
+      bridge?.minimizeWindow() ?? rejectBridgeCall()
+    );
+  },
   async openExternal(target: string): Promise<void> {
     await withToast(createT(snapshot.settings.desktop.language)("errorOpenLinkFailed"), () =>
       bridge?.openExternal(target) ?? rejectBridgeCall()
@@ -205,7 +215,7 @@ export const desktopActions = {
   },
   async startRecording(): Promise<void> {
     const title = createT(snapshot.settings.desktop.language)("errorStartRecordingFailed");
-    if (snapshot.status.downloading) {
+    if (snapshot.status.downloading && !snapshot.settings.recording.disableAsr) {
       showDownloadBlockedToast();
       return;
     }

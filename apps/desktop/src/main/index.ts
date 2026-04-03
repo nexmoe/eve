@@ -76,6 +76,36 @@ let cachedPermission = isE2E
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : "Failed to start recording.";
 
+// ── Throttled snapshot emission ─────────────────────────────────────
+// Audio-chunk status updates arrive many times per second.  Flooding the
+// renderer with IPC messages for every single chunk wastes CPU on
+// serialisation/deserialisation and forces React to re-render at an
+// unsustainable rate.  We throttle to at most one emission per 100 ms
+// during recording.
+const SNAPSHOT_THROTTLE_MS = 100;
+let snapshotThrottleTimer: ReturnType<typeof setTimeout> | null = null;
+let snapshotPending = false;
+
+const scheduleSnapshotEmit = (): void => {
+  snapshotPending = true;
+  if (snapshotThrottleTimer) {
+    return; // a flush is already scheduled
+  }
+  snapshotThrottleTimer = setTimeout(() => {
+    snapshotThrottleTimer = null;
+    if (snapshotPending) {
+      snapshotPending = false;
+      void emitSnapshot(buildSnapshot(), { force: true });
+    }
+  }, SNAPSHOT_THROTTLE_MS);
+};
+
+const hideDockIcon = (): void => {
+  if (process.platform === "darwin" && !isE2E) {
+    app.dock?.hide();
+  }
+};
+
 const buildSnapshot = (): DesktopSnapshot => {
   const settings = getSettings();
   return {
@@ -174,7 +204,6 @@ const openRendererDevTools = (): void => {
 const activateAppForPermissionPrompt = (): void => {
   revealMainWindow();
   if (process.platform === "darwin") {
-    app.dock?.show();
     app.focus({ steal: true });
   }
 };
@@ -231,20 +260,25 @@ const ensureMicrophonePermission = async (): Promise<void> => {
   }
   activateAppForPermissionPrompt();
   cachedPermission = await requestMicrophonePermission();
+  hideDockIcon();
 };
 
 const bootstrapDesktop = async (): Promise<void> => {
   if (app.isPackaged) {
     initializeMainLogger();
   }
-  if (process.platform === "darwin" && !isE2E) {
-    app.dock?.hide();
-  }
+  hideDockIcon();
   const settings = getSettings() ?? DEFAULT_SETTINGS;
   engine = new (isE2E ? TestDesktopEngine : DesktopEngine)((status) => {
     lastStatus = status;
     setTrayStatus(lastStatus);
-    void emitSnapshot(buildSnapshot(), { force: true });
+    // During recording, audio-chunk status updates arrive very frequently.
+    // Throttle renderer emissions to avoid IPC and React re-render overhead.
+    if (lastStatus.recording) {
+      scheduleSnapshotEmit();
+    } else {
+      void emitSnapshot(buildSnapshot(), { force: true });
+    }
   });
   await engine.applySettings(settings);
   lastStatus = engine.getStatus();
@@ -368,6 +402,18 @@ ipcMain.handle("desktop:pick-directory", async (_event, defaultPath?: string) =>
     : await dialog.showOpenDialog(options);
   return result.canceled ? null : (result.filePaths[0] ?? null);
 });
+ipcMain.handle("desktop:minimize-window", () => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+  mainWindow.minimize();
+});
+ipcMain.handle("desktop:close-window", () => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+  mainWindow.close();
+});
 ipcMain.handle("desktop:open-external", (_event, target: string) => shell.openExternal(target));
 ipcMain.handle("desktop:open-recording-folder", async (_event, target: string) => {
   await shell.openPath(target);
@@ -376,7 +422,9 @@ ipcMain.handle("desktop:request-permission", async () => {
   activateAppForPermissionPrompt();
   const permission = isE2E
     ? cachedPermission
-    : await requestMicrophonePermission();
+    : await requestMicrophonePermission().finally(() => {
+        hideDockIcon();
+      });
   cachedPermission = permission;
   await emitSnapshot(buildSnapshot());
   return permission;
@@ -432,13 +480,12 @@ ipcMain.on("desktop:audio-chunk", (_event, payload: {
   deviceLabel: string;
   rms: number;
   sampleRate: number;
-  samples: number[];
+  samplesBuffer: ArrayBuffer;
+  samplesLength: number;
 }) => {
-  const samples = Float32Array.from(payload.samples);
-  void engine?.pushAudioChunk({
-    ...payload,
-    samples
-  });
+  const { samplesBuffer, samplesLength, ...rest } = payload;
+  const samples = new Float32Array(samplesBuffer, 0, samplesLength);
+  void engine?.pushAudioChunk({ ...rest, samples });
 });
 
 if (!isE2E && !app.requestSingleInstanceLock()) {

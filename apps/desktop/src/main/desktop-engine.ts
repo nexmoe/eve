@@ -43,6 +43,7 @@ const HISTORY_LIMIT = 5;
 const AUDIO_EXTENSIONS = new Set([".flac", ".wav"]);
 const AUDIO_QUEUE_ASR_BACKPRESSURE_THRESHOLD = 6;
 const AUDIO_QUEUE_ASR_RESUME_THRESHOLD = 2;
+const AUDIO_QUEUE_MAX_SIZE = 30;
 const DIAGNOSTIC_LOG_INTERVAL_MS = 15_000;
 const TRANSCRIBE_LIMIT = 0;
 
@@ -109,7 +110,12 @@ export class DesktopEngine {
 
   getDevices(): DeviceInfo[] { return this.devices; }
 
-  getReady(): boolean { return this.status.senseVoiceReady && this.status.vadReady && !this.status.downloading; }
+  getReady(): boolean {
+    if (this.settings.recording.disableAsr) {
+      return !this.status.downloading;
+    }
+    return this.status.senseVoiceReady && this.status.vadReady && !this.status.downloading;
+  }
 
   getStatus(): RecorderStatusSnapshot { return { ...this.status }; }
 
@@ -127,17 +133,22 @@ export class DesktopEngine {
     if (this.status.recording) {
       return;
     }
-    await this.modelManager.ensureRuntimeAssets();
+    const liveTranscriptionEnabled = !this.settings.recording.disableAsr;
+    if (liveTranscriptionEnabled) {
+      await this.modelManager.ensureRuntimeAssets();
+    }
     if (this.settings.recording.audioFormat === "flac") {
       await this.modelManager.requireFfmpeg();
     }
-    if (!this.settings.recording.disableAsr) {
+    if (liveTranscriptionEnabled) {
       this.recognizer ??= createSenseVoiceRecognizer(
         this.modelManager.getSenseVoiceDirectory(),
         this.settings.recording.asrLanguage
       );
     }
-    this.vad = createSherpaVad(this.modelManager.getVadModelPath());
+    this.vad = this.status.vadReady
+      ? createSherpaVad(this.modelManager.getVadModelPath())
+      : null;
     this.vadRemainder = new Float32Array(0);
     this.pendingAudioChunks.length = 0;
     this.skippedAsrChunks = 0;
@@ -147,13 +158,13 @@ export class DesktopEngine {
     this.segment = await this.openSegment();
     this.logDiagnostics("recording-started");
     this.patchStatus({
-      asrEnabled: !this.settings.recording.disableAsr,
+      asrEnabled: liveTranscriptionEnabled,
       asrHistory: [],
       asrPreview: "",
       error: null,
       inSpeech: false,
       recording: true,
-      statusMessage: "Recording with Qwen3 ASR.",
+      statusMessage: liveTranscriptionEnabled ? "Recording with Qwen3 ASR." : "Recording audio only.",
       waveformBins: DEFAULT_STATUS.waveformBins
     });
   }
@@ -166,6 +177,8 @@ export class DesktopEngine {
     await this.flushVad();
     await this.closeSegment();
     this.vad = null;
+    this.vadRemainder = new Float32Array(0);
+    this.pendingAudioChunks.length = 0;
     this.segment = null;
     this.recordingStartedAt = 0;
     this.logDiagnostics("recording-stopped", { force: true });
@@ -180,6 +193,13 @@ export class DesktopEngine {
   async pushAudioChunk(payload: AudioChunkPayload): Promise<void> {
     if (!this.status.recording || !this.segment) {
       return;
+    }
+    // Drop oldest chunks when the queue grows too large to prevent unbounded
+    // memory growth when processing can't keep up with the input rate.
+    if (this.pendingAudioChunks.length >= AUDIO_QUEUE_MAX_SIZE) {
+      const dropped = this.pendingAudioChunks.length - AUDIO_QUEUE_ASR_RESUME_THRESHOLD;
+      this.pendingAudioChunks.splice(0, dropped);
+      log.warn(`[eve][engine] audio queue overflow – dropped ${dropped} chunks`);
     }
     this.pendingAudioChunks.push(payload);
     this.scheduleAudioQueueDrain();
@@ -309,18 +329,35 @@ export class DesktopEngine {
     if (!this.vad) {
       return;
     }
-    const combined = new Float32Array(this.vadRemainder.length + samples.length);
-    combined.set(this.vadRemainder);
-    combined.set(samples, this.vadRemainder.length);
     const windowSize = this.vad.config.sileroVad.windowSize;
+
+    // Fast-path: no remainder from a previous call – process `samples` directly
+    // to avoid allocating a combined buffer every time.
+    let data: Float32Array;
+    if (this.vadRemainder.length === 0) {
+      data = samples;
+    } else {
+      data = new Float32Array(this.vadRemainder.length + samples.length);
+      data.set(this.vadRemainder);
+      data.set(samples, this.vadRemainder.length);
+    }
+
     let offset = 0;
-    while (offset + windowSize <= combined.length) {
-      this.vad.acceptWaveform(combined.subarray(offset, offset + windowSize));
+    while (offset + windowSize <= data.length) {
+      this.vad.acceptWaveform(data.subarray(offset, offset + windowSize));
       offset += windowSize;
       this.patchStatus({ inSpeech: this.vad.isDetected() });
       await this.drainVadSegments({ decodeSegments });
     }
-    this.vadRemainder = combined.subarray(offset);
+
+    // Keep only the leftover tail for the next call.
+    const remaining = data.length - offset;
+    if (remaining > 0) {
+      // Allocate a fresh small buffer so the (potentially large) `data` can be GC'd.
+      this.vadRemainder = data.slice(offset);
+    } else {
+      this.vadRemainder = new Float32Array(0);
+    }
   }
 
   private async drainVadSegments({

@@ -28,7 +28,10 @@ extraResources:
   - from: vendor/ffmpeg
     to: vendor/ffmpeg
     filter:
-      - "**/*"
+      - "**/ffmpeg"
+      - "**/ffmpeg.exe"
+      - "**/LICENSE.txt"
+      - "**/install-info.json"
 mac:
   artifactName: ${productName}-${version}-installer.${ext}
   category: public.app-category.productivity

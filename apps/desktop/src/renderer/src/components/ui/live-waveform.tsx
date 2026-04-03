@@ -73,6 +73,7 @@ export const LiveWaveform = ({
   const needsRedrawRef = useRef(true);
   const gradientCacheRef = useRef<CanvasGradient | null>(null);
   const lastWidthRef = useRef(0);
+  const frequencyDataRef = useRef<Uint8Array | null>(null);
 
   const heightStyle = typeof height === "number" ? `${height}px` : height;
 
@@ -360,14 +361,19 @@ export const LiveWaveform = ({
         lastUpdateRef.current = currentTime;
 
         if (analyserRef.current) {
-          const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+          // Reuse the typed array across frames to avoid per-frame allocation.
+          const binCount = analyserRef.current.frequencyBinCount;
+          if (!frequencyDataRef.current || frequencyDataRef.current.length !== binCount) {
+            frequencyDataRef.current = new Uint8Array(binCount);
+          }
+          const dataArray = frequencyDataRef.current;
           analyserRef.current.getByteFrequencyData(dataArray);
 
           if (mode === "static") {
             // For static mode, update bars in place
             const startFreq = Math.floor(dataArray.length * 0.05);
             const endFreq = Math.floor(dataArray.length * 0.4);
-            const relevantData = dataArray.slice(startFreq, endFreq);
+            const relevantLen = endFreq - startFreq;
 
             const barCount = Math.max(1, Math.floor(rect.width / (barWidth + barGap)));
             const centerIndex = (barCount - 1) / 2;
@@ -378,10 +384,10 @@ export const LiveWaveform = ({
               const normalizedDistance =
                 centerIndex > 0 ? Math.abs(i - centerIndex) / centerIndex : 0;
               const dataIndex = Math.min(
-                relevantData.length - 1,
-                Math.floor(normalizedDistance * (relevantData.length - 1))
+                relevantLen - 1,
+                Math.floor(normalizedDistance * (relevantLen - 1))
               );
-              const value = Math.min(1, (relevantData[dataIndex] / 255) * sensitivity);
+              const value = Math.min(1, (dataArray[startFreq + dataIndex] / 255) * sensitivity);
               newBars.push(Math.max(0.05, value));
             }
 
@@ -392,16 +398,16 @@ export const LiveWaveform = ({
             let sum = 0;
             const startFreq = Math.floor(dataArray.length * 0.05);
             const endFreq = Math.floor(dataArray.length * 0.4);
-            const relevantData = dataArray.slice(startFreq, endFreq);
+            const relevantLen = endFreq - startFreq;
 
-            for (let i = 0; i < relevantData.length; i++) {
-              sum += relevantData[i];
+            for (let i = startFreq; i < endFreq; i++) {
+              sum += dataArray[i];
             }
-            const average = (sum / relevantData.length / 255) * sensitivity;
+            const average = (sum / relevantLen / 255) * sensitivity;
 
             // Add to history
             historyRef.current.push(Math.min(1, Math.max(0.05, average)));
-            lastActiveDataRef.current = [...historyRef.current];
+            lastActiveDataRef.current = historyRef.current;
 
             // Maintain history size
             if (historyRef.current.length > historySize) {

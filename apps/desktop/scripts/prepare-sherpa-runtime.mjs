@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, realpathSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -74,6 +75,30 @@ const resolveBunPackageDirectory = (packageName) => {
   );
 };
 
+const stripMacArtifacts = () => {
+  if (process.platform !== "darwin") {
+    return;
+  }
+
+  const stripCandidates = [
+    join(outputDirectory, platformPackageName, "libonnxruntime.1.23.2.dylib"),
+    join(outputDirectory, platformPackageName, "libonnxruntime.dylib"),
+    join(outputDirectory, platformPackageName, "libsherpa-onnx-c-api.dylib"),
+    join(outputDirectory, platformPackageName, "libsherpa-onnx-cxx-api.dylib"),
+    join(outputDirectory, platformPackageName, "sherpa-onnx.node")
+  ];
+
+  for (const candidate of stripCandidates) {
+    if (!existsSync(candidate)) {
+      continue;
+    }
+
+    execFileSync("xcrun", ["strip", "-S", "-x", candidate], {
+      stdio: "inherit"
+    });
+  }
+};
+
 rmSync(outputDirectory, { force: true, recursive: true });
 mkdirSync(outputDirectory, { recursive: true });
 
@@ -84,3 +109,5 @@ for (const packageName of ["sherpa-onnx-node", platformPackageName]) {
     recursive: true
   });
 }
+
+stripMacArtifacts();

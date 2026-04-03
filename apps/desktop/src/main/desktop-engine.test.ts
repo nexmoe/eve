@@ -89,6 +89,26 @@ describe("DesktopEngine", () => {
     expect(transcodeWavToFlac).toHaveBeenCalledTimes(1);
   });
 
+  it("starts recording without downloading models when realtime transcription is disabled", async () => {
+    const { DesktopEngine } = await import("./desktop-engine");
+    const engine = new DesktopEngine(() => {});
+
+    await engine.applySettings({
+      ...DEFAULT_SETTINGS,
+      recording: { ...DEFAULT_SETTINGS.recording, audioFormat: "wav", disableAsr: true }
+    });
+
+    await engine.startRecording();
+
+    expect(modelManagerState.ensureRuntimeAssets).not.toHaveBeenCalled();
+    expect(modelManagerState.requireFfmpeg).not.toHaveBeenCalled();
+    expect(engine.getStatus()).toMatchObject({
+      asrEnabled: false,
+      recording: true,
+      statusMessage: "Recording audio only."
+    });
+  });
+
   it("rotates the active segment immediately when recording output settings change", async () => {
     const { DesktopEngine } = await import("./desktop-engine");
     const engine = new DesktopEngine(() => {});

@@ -128,8 +128,8 @@ async function findExtractedFile({ directoryPath, fileNames }) {
 
 const resolveExecutableNames = (target) =>
   target.startsWith("win32")
-    ? { ffmpeg: "ffmpeg.exe", ffprobe: "ffprobe.exe" }
-    : { ffmpeg: "ffmpeg", ffprobe: "ffprobe" };
+    ? { ffmpeg: "ffmpeg.exe" }
+    : { ffmpeg: "ffmpeg" };
 
 const installTarget = async (release, target) => {
   const targetConfig = TARGET_CONFIG[target];
@@ -140,12 +140,11 @@ const installTarget = async (release, target) => {
   const outputDirectoryPath = join(OUTPUT_ROOT, target);
   const executableNames = resolveExecutableNames(target);
   const outputFfmpegPath = join(outputDirectoryPath, executableNames.ffmpeg);
-  const outputFfprobePath = join(outputDirectoryPath, executableNames.ffprobe);
-  const existingFiles = await Promise.allSettled([stat(outputFfmpegPath), stat(outputFfprobePath)]);
-  if (
-    process.env.EVE_FORCE_SETUP_FFMPEG !== "1" &&
-    existingFiles.every((result) => result.status === "fulfilled")
-  ) {
+  const existingFfmpeg = await stat(outputFfmpegPath).then(
+    () => true,
+    () => false
+  );
+  if (process.env.EVE_FORCE_SETUP_FFMPEG !== "1" && existingFfmpeg) {
     console.log(`[ffmpeg] skipped ${target}, bundled binaries already exist`);
     return;
   }
@@ -159,35 +158,27 @@ const installTarget = async (release, target) => {
     await mkdir(extractedDirectoryPath, { recursive: true });
     await extractArchive({ archivePath, destinationPath: extractedDirectoryPath });
 
-    const [resolvedFfmpegPath, resolvedFfprobePath, resolvedLicensePath] = await Promise.all([
+    const [resolvedFfmpegPath, resolvedLicensePath] = await Promise.all([
       findExtractedFile({
         directoryPath: extractedDirectoryPath,
         fileNames: [executableNames.ffmpeg]
       }),
       findExtractedFile({
         directoryPath: extractedDirectoryPath,
-        fileNames: [executableNames.ffprobe]
-      }),
-      findExtractedFile({
-        directoryPath: extractedDirectoryPath,
         fileNames: ["LICENSE", "LICENSE.txt", "license.txt"]
       })
     ]);
-    if (!(resolvedFfmpegPath && resolvedFfprobePath)) {
-      throw new Error(
-        `Downloaded archive for ${target} does not contain both ffmpeg and ffprobe binaries.`
-      );
+    if (!resolvedFfmpegPath) {
+      throw new Error(`Downloaded archive for ${target} does not contain an ffmpeg binary.`);
     }
 
     await mkdir(outputDirectoryPath, { recursive: true });
     await cp(resolvedFfmpegPath, outputFfmpegPath, { force: true });
-    await cp(resolvedFfprobePath, outputFfprobePath, { force: true });
     if (resolvedLicensePath) {
       await cp(resolvedLicensePath, join(outputDirectoryPath, "LICENSE.txt"), { force: true });
     }
     if (process.platform !== "win32") {
       await chmod(outputFfmpegPath, 0o755);
-      await chmod(outputFfprobePath, 0o755);
     }
 
     const resolvedTagName = finalDownloadUrl.match(RELEASE_TAG_REGEX)?.[1] ?? assetDownload.tagName;
@@ -198,7 +189,6 @@ const installTarget = async (release, target) => {
           assetName: assetDownload.assetName,
           downloadedAt: new Date().toISOString(),
           ffmpegFileName: executableNames.ffmpeg,
-          ffprobeFileName: executableNames.ffprobe,
           finalDownloadUrl,
           platform: target,
           tagName: resolvedTagName

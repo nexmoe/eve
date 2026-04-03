@@ -120,23 +120,29 @@ export function StatusOverview({
       <div className="metric-stack">
         <div className="metric-cell">
           <Mic className="h-3 w-3 shrink-0 text-[color:var(--accent)]" />
-          <div className="metric-label-compact">{t("metricDevice")}</div>
-          <strong className="metric-value-compact ml-auto truncate text-right">
-            {snapshot.status.deviceLabel}
-          </strong>
+          <div className="metric-copy">
+            <div className="metric-label-compact">{t("metricDevice")}</div>
+            <strong className="metric-value-compact text-left">
+              {snapshot.status.deviceLabel}
+            </strong>
+          </div>
         </div>
         <div className="metric-row-inner">
           <div className="metric-cell">
             <Activity className="h-3 w-3 shrink-0 text-[color:var(--accent)]" />
-            <div className="metric-label-compact">{t("metricLevel")}</div>
-            <strong className="metric-value-compact ml-auto">
-              {snapshot.status.db.toFixed(1)} dB
-            </strong>
+            <div className="metric-copy">
+              <div className="metric-label-compact">{t("metricLevel")}</div>
+              <strong className="metric-value-compact text-left">
+                {snapshot.status.db.toFixed(1)} dB
+              </strong>
+            </div>
           </div>
           <div className="metric-cell">
             <div className="status-dot shrink-0" data-tone={vadState.tone} />
-            <div className="metric-label-compact">{t("metricVad")}</div>
-            <strong className="metric-value-compact ml-auto">{vadState.label}</strong>
+            <div className="metric-copy">
+              <div className="metric-label-compact">{t("metricVad")}</div>
+              <strong className="metric-value-compact text-left">{vadState.label}</strong>
+            </div>
           </div>
         </div>
       </div>

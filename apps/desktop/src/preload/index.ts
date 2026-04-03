@@ -9,6 +9,8 @@ import type {
 export interface DesktopBridgeApi {
   bootstrap: () => Promise<DesktopSnapshot>;
   captureError: (message: string) => Promise<DesktopSnapshot>;
+  closeWindow: () => Promise<void>;
+  minimizeWindow: () => Promise<void>;
   pushAudioChunk: (payload: {
     deviceId: string;
     deviceLabel: string;
@@ -33,10 +35,20 @@ export interface DesktopBridgeApi {
 const api: DesktopBridgeApi = {
   bootstrap: () => ipcRenderer.invoke("desktop:get-snapshot"),
   captureError: (message) => ipcRenderer.invoke("desktop:capture-error", message),
+  closeWindow: () => ipcRenderer.invoke("desktop:close-window"),
+  minimizeWindow: () => ipcRenderer.invoke("desktop:minimize-window"),
   pushAudioChunk: ({ samples, ...payload }) => {
+    // Pass the underlying ArrayBuffer + byteOffset/length so Electron's
+    // structured-clone transfers binary data instead of serialising to a
+    // plain number[].  This cuts per-chunk IPC memory roughly in half and
+    // avoids creating a temporary Array of boxed Numbers.
     ipcRenderer.send("desktop:audio-chunk", {
       ...payload,
-      samples: Array.from(samples)
+      samplesBuffer: samples.buffer.slice(
+        samples.byteOffset,
+        samples.byteOffset + samples.byteLength
+      ),
+      samplesLength: samples.length
     });
   },
   openRecordingFolder: (target) => ipcRenderer.invoke("desktop:open-recording-folder", target),

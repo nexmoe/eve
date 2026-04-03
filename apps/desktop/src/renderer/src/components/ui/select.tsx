@@ -12,14 +12,14 @@ export function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        "flex h-9 w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[var(--shadow-inset)] px-3 text-xs text-[color:var(--foreground)] outline-none transition focus:border-[color:var(--ring)] focus:ring-1 focus:ring-[color:var(--ring)] data-[placeholder]:text-[color:var(--muted)]",
+        "flex min-h-9 w-full min-w-0 max-w-full items-start justify-between gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-left text-xs text-[color:var(--foreground)] shadow-[var(--shadow-inset)] outline-none transition focus:border-[color:var(--ring)] focus:ring-1 focus:ring-[color:var(--ring)] data-[placeholder]:text-[color:var(--muted)]",
         className
       )}
       {...props}
     >
-      <SelectPrimitive.Value className="truncate" />
+      <SelectPrimitive.Value className="block min-w-0 flex-1 break-words pr-1 leading-6 whitespace-normal" />
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[color:var(--muted)]" />
+        <ChevronDown className="mt-1 h-3.5 w-3.5 shrink-0 text-[color:var(--muted)]" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -59,7 +59,7 @@ export function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex w-full cursor-default select-none items-center rounded-md py-1.5 pl-8 pr-2 text-xs outline-none transition focus:bg-[color:var(--surface-soft)] focus:text-[color:var(--foreground)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex w-full cursor-default select-none items-start rounded-md py-1.5 pl-8 pr-2 text-xs outline-none transition focus:bg-[color:var(--surface-soft)] focus:text-[color:var(--foreground)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className
       )}
       {...props}
@@ -69,7 +69,9 @@ export function SelectItem({
           <Check className="h-3.5 w-3.5" />
         </SelectPrimitive.ItemIndicator>
       </span>
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      <SelectPrimitive.ItemText className="break-words leading-5 whitespace-normal">
+        {children}
+      </SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   );
 }

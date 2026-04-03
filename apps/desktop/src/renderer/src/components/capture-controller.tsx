@@ -97,10 +97,15 @@ export function CaptureController({ onStreamChange, snapshot }: Props) {
     const source = audioContext.createMediaStreamSource(stream);
     const processor = audioContext.createScriptProcessor(PROCESSOR_BUFFER_SIZE, 1, 1);
     processor.onaudioprocess = (event) => {
+      // getChannelData returns a view into a buffer that is reused across
+      // callbacks.  We must copy before handing to pushAudioChunk because the
+      // preload bridge will read the buffer asynchronously.
       const input = event.inputBuffer.getChannelData(0);
-      const samples = new Float32Array(input);
-      const rms = computeRms(samples);
+      const rms = computeRms(input);
       currentRmsRef.current = rms;
+      // Copy into a fresh Float32Array – pushAudioChunk will slice the
+      // underlying ArrayBuffer for IPC transfer.
+      const samples = new Float32Array(input);
       window.eve.pushAudioChunk({
         deviceId: currentDeviceIdRef.current,
         deviceLabel: currentLabelRef.current,
