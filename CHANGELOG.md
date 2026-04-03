@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.3 - 2026-04-03
+
+### Fixes
+- macOS: activate the app and briefly toggle `setVisibleOnAllWorkspaces` when revealing from the tray so the window receives focus while the Dock icon stays hidden.
+
+### Features
+- Home: place the GitHub star card in the settings panel stack and simplify its styling (no fixed overlay).
+
 ## 0.8.2 - 2026-04-03
 
 ### Features
