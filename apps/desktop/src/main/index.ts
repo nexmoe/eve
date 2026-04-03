@@ -177,10 +177,22 @@ const revealMainWindow = (): BrowserWindow => {
   if (windowRef.isMinimized()) {
     windowRef.restore();
   }
-  windowRef.setVisibleOnAllWorkspaces(false);
   positionWindowForReveal(windowRef, getTrayBounds());
-  windowRef.show();
-  windowRef.focus();
+  if (process.platform === "darwin") {
+    // Activate the app first so macOS brings it to the foreground.
+    // Without this, the window may show but not receive focus when
+    // the dock icon is hidden.
+    app.show();
+    windowRef.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    windowRef.show();
+    windowRef.focus();
+    windowRef.setVisibleOnAllWorkspaces(false);
+    hideDockIcon();
+  } else {
+    windowRef.setVisibleOnAllWorkspaces(false);
+    windowRef.show();
+    windowRef.focus();
+  }
   return windowRef;
 };
 

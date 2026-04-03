@@ -19,7 +19,6 @@ export function App() {
       <ToastViewport />
       <CaptureController snapshot={snapshot} onStreamChange={setSharedStream} />
       <WindowsWindowControls snapshot={snapshot} />
-      <HomeGithubStar snapshot={snapshot} />
 
       <ScrollArea className="h-screen w-full">
         <div className="tray-panel min-w-0 max-w-full overflow-x-hidden">
@@ -36,6 +35,9 @@ export function App() {
           </div>
           <div className="panel-section">
             <SettingsTabs snapshot={snapshot} />
+          </div>
+          <div className="panel-section">
+            <HomeGithubStar snapshot={snapshot} />
           </div>
         </div>
       </ScrollArea>

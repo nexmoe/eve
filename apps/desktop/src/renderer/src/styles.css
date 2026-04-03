@@ -100,25 +100,14 @@ input {
 }
 
 .home-github-star {
-  position: fixed;
-  top: 0.8rem;
-  right: 1rem;
-  z-index: 60;
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  width: min(22rem, calc(100vw - 2rem));
+  width: 100%;
   padding: 0.65rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   border-radius: 0.95rem;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, white 8%), color-mix(in srgb, var(--surface) 88%, transparent)),
-    color-mix(in srgb, var(--surface) 78%, transparent);
-  box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 color-mix(in srgb, var(--highlight) 85%, transparent);
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
 }
 
 .windows-window-controls {
@@ -151,9 +140,6 @@ input {
   }
 }
 
-body[data-platform="win32"] .home-github-star {
-  right: 5.75rem;
-}
 
 .home-github-star__icon {
   display: grid;
@@ -182,20 +168,8 @@ body[data-platform="win32"] .home-github-star {
 }
 
 @media (max-width: 520px) {
-  .home-github-star {
-    top: 0.65rem;
-    right: 0.75rem;
-    left: 0.75rem;
-    width: auto;
-  }
-
   .home-github-star__hint {
     display: none;
-  }
-
-  body[data-platform="win32"] .home-github-star {
-    right: 5.15rem;
-    left: 0.75rem;
   }
 
   .windows-window-controls {
