@@ -31,6 +31,7 @@ recordings/
 *.mp3
 
 # System & editor
+.superset/
 .DS_Store
 Thumbs.db
 *.swp
