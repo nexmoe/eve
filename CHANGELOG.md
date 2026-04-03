@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.2 - 2026-04-03
+
+### Features
+- Windows: custom title-bar minimize and close controls wired to main-process window actions.
+- Home: GitHub star affordance for the desktop shell.
+
+### Fixes
+- Throttle desktop snapshot IPC emissions while recording to cut renderer churn from high-frequency audio status updates.
+- Deliver live audio chunks to the engine with transferable `ArrayBuffer` payloads instead of large numeric arrays.
+- Refine macOS Dock visibility around microphone permission prompts.
+
+### Maintenance
+- Harden Sherpa runtime preparation and FFmpeg setup scripts; minor `electron-builder` metadata tweaks.
+
 ## 0.8.1 - 2026-03-28
 
 ### Fixes
