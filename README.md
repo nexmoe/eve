@@ -1,41 +1,38 @@
-# eve
+# Eve Recorder
 
 English | [中文](README.zh.md)
 
-`eve` stands for `eavesdropper`.
-
-`eve` is a tray-first desktop recorder built with Electron. It records microphone audio for long sessions, segments files automatically, and uses `sherpa-onnx` with Qwen3 ASR plus sherpa VAD for live transcription and offline reprocessing.
+Eve Recorder (formerly `eve`, short for `eavesdropper`) is a tray-first desktop recorder built with Electron. It records microphone audio for long sessions, segments files automatically, and uses `sherpa-onnx` with Qwen3 ASR plus Silero VAD for live transcription and offline reprocessing.
 
 ## Features
 
 - Long-running microphone recording with automatic segmentation
-- Live transcription with Qwen3 ASR
-- Sherpa VAD speech detection
-- Manual microphone selection plus automatic switch to the more active input
+- Live transcription powered by Qwen3 ASR (can be disabled)
+- VAD-only recording — only speech segments are saved to disk
+- Real-time waveform visualization
+- Manual microphone selection with automatic switch to the more active input
 - WAV and FLAC output
 - Batch transcription of existing WAV/FLAC recordings
-- Electron tray app with launch-at-login and auto-update support
+- Recording history viewer grouped by day
+- System tray app with launch-at-login, start-on-launch, and auto-update
+- Bilingual UI (English / 中文)
+- Light / Dark / System theme
 
 ## Desktop Preview
 
-![eve desktop app](docs/images/desktop-gui-preview.png)
+![Eve Recorder desktop app](docs/images/desktop-gui-preview.png)
 
 ## Download
 
 - Release page: [nexmoe/eve Releases](https://github.com/nexmoe/eve/releases)
-- macOS: latest `.pkg`
-- Windows: latest `.exe`
+- macOS: `.dmg` or `.zip`
+- Windows: `.exe` (NSIS installer)
 
-The packaged app supports automatic update checks and install-on-quit updates.
+The packaged app checks for updates automatically and installs them on quit.
 
 ## Runtime Notes
 
-- `eve` downloads Qwen3 ASR and VAD assets on first use and stores them under the app user-data directory.
-- `ffmpeg` is required for FLAC output and for transcribing non-WAV input. On macOS:
-
-```bash
-brew install ffmpeg
-```
+- Eve Recorder downloads Qwen3 ASR and Silero VAD model files on first use and caches them under the app user-data directory.
 
 ## Output
 
@@ -62,3 +59,4 @@ Example JSON:
 ## More Documentation
 
 - [Development Guide](docs/development.md)
+- [Changelog](CHANGELOG.md)

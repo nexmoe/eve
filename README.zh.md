@@ -1,41 +1,38 @@
-# eve
+# Eve Recorder
 
 中文 | [English](README.md)
 
-`eve` 全称 `eavesdropper`。
-
-`eve` 是一个以托盘常驻为核心的桌面录音应用。它可以长时间录制麦克风、自动分段存档，并使用 `sherpa-onnx` 的 Qwen3 ASR 与 sherpa VAD 做实时转写和离线补转写。
+Eve Recorder（原名 `eve`，取自 `eavesdropper`）是一个以托盘常驻为核心的桌面录音应用。它可以长时间录制麦克风、自动分段存档，并使用 `sherpa-onnx` 的 Qwen3 ASR 与 Silero VAD 做实时转写和离线补转写。
 
 ## 功能特性
 
 - 长时间麦克风录音与自动分段
-- 基于 Qwen3 ASR 的实时转写
-- 基于 sherpa VAD 的语音检测
+- 基于 Qwen3 ASR 的实时转写（可关闭）
+- 仅语音录制模式 — 仅保存 VAD 检测到的语音片段
+- 实时音频波形可视化
 - 手动选择麦克风，并可自动切到更活跃的输入设备
 - 同时支持 WAV 与 FLAC 输出
 - 支持对已有 WAV/FLAC 录音做批量转写
-- Electron 托盘应用，支持开机自启与自动更新
+- 按天分组的录音历史浏览
+- 系统托盘应用，支持开机自启、启动即录、自动更新
+- 中英双语界面
+- 亮色 / 暗色 / 跟随系统主题
 
 ## 桌面应用预览
 
-![eve 桌面应用](docs/images/desktop-gui-preview.png)
+![Eve Recorder 桌面应用](docs/images/desktop-gui-preview.png)
 
 ## 下载
 
 - 发布页面：[nexmoe/eve Releases](https://github.com/nexmoe/eve/releases)
-- macOS：最新 `.pkg`
-- Windows：最新 `.exe`
+- macOS：`.dmg` 或 `.zip`
+- Windows：`.exe`（NSIS 安装包）
 
-打包后的桌面端支持自动检查更新，并在退出时安装已下载的更新。
+打包后的桌面端会自动检查更新，并在退出时安装已下载的更新。
 
 ## 运行说明
 
-- 首次开始录音或转写时，`eve` 会自动下载 Qwen3 ASR 和 VAD 模型，并缓存到应用用户数据目录。
-- 使用 FLAC 输出或转写非 WAV 文件时需要 `ffmpeg`。在 macOS 上可执行：
-
-```bash
-brew install ffmpeg
-```
+- 首次开始录音或转写时，Eve Recorder 会自动下载 Qwen3 ASR 和 Silero VAD 模型，并缓存到应用用户数据目录。
 
 ## 输出内容
 
@@ -62,3 +59,4 @@ brew install ffmpeg
 ## 更多文档
 
 - [开发者指南](docs/development.zh.md)
+- [更新日志](CHANGELOG.md)
