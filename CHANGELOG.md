@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.4 - 2026-04-05
+
+### Features
+- Desktop: system tray menu shows app version, auto-update status, manual check, and quit-and-install when an update is ready.
+
 ## 0.8.3 - 2026-04-03
 
 ### Fixes
