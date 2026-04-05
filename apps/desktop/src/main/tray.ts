@@ -1,8 +1,10 @@
 import { Menu, Tray, app, nativeImage } from "electron";
-import { DEFAULT_STATUS, type RecorderStatusSnapshot } from "@eve/shared";
+import { DEFAULT_STATUS, type AutoUpdateSnapshot, type RecorderStatusSnapshot } from "@eve/shared";
 
 interface TrayControllerOptions {
   iconPath: string;
+  onCheckForUpdates: () => void;
+  onInstallUpdate: () => void;
   onOpen: () => void;
   onOpenDevTools: () => void;
   onQuit: () => void;
@@ -15,6 +17,7 @@ interface TrayControllerState extends TrayControllerOptions {
   launchAtLogin: boolean;
   status: RecorderStatusSnapshot;
   tray: Tray;
+  updater: AutoUpdateSnapshot | null;
 }
 
 let trayState: TrayControllerState | null = null;
@@ -25,6 +28,71 @@ const createTrayImage = (iconPath: string): Electron.NativeImage => {
     return image;
   }
   return image.resize({ height: 18, width: 18 });
+};
+
+const getUpdaterMenuItems = (): Electron.MenuItemConstructorOptions[] => {
+  if (!trayState) {
+    return [];
+  }
+
+  const updater = trayState.updater;
+  const versionItem: Electron.MenuItemConstructorOptions = {
+    enabled: false,
+    label: `版本：${app.getVersion()}`
+  };
+
+  if (!updater) {
+    return [
+      versionItem,
+      { click: trayState.onCheckForUpdates, label: "检查更新" }
+    ];
+  }
+
+  switch (updater.phase) {
+    case "checking":
+      return [
+        versionItem,
+        { enabled: false, label: "正在检查更新…" }
+      ];
+
+    case "downloading":
+      return [
+        versionItem,
+        { enabled: false, label: updater.statusMessage }
+      ];
+
+    case "downloaded":
+      return [
+        versionItem,
+        {
+          enabled: false,
+          label: updater.installDeferredUntilIdle
+            ? `更新 ${updater.downloadedVersion ?? ""} 将在录音结束后安装`
+            : `更新 ${updater.downloadedVersion ?? ""} 已就绪`
+        },
+        { click: trayState.onInstallUpdate, label: "立即安装并重启" }
+      ];
+
+    case "error":
+      return [
+        versionItem,
+        { enabled: false, label: "更新检查失败" },
+        { click: trayState.onCheckForUpdates, label: "重试更新" }
+      ];
+
+    case "idle":
+      return [
+        versionItem,
+        { enabled: false, label: "已是最新版本" },
+        { click: trayState.onCheckForUpdates, label: "检查更新" }
+      ];
+
+    default:
+      return [
+        versionItem,
+        { click: trayState.onCheckForUpdates, label: "检查更新" }
+      ];
+  }
 };
 
 const buildMenu = (): Menu => {
@@ -69,6 +137,10 @@ const buildMenu = (): Menu => {
     {
       type: "separator"
     },
+    ...getUpdaterMenuItems(),
+    {
+      type: "separator"
+    },
     {
       click: trayState.onOpen,
       label: "打开主窗口"
@@ -105,7 +177,8 @@ export const initializeTray = (options: TrayControllerOptions): void => {
     ...options,
     launchAtLogin: false,
     status: { ...DEFAULT_STATUS },
-    tray
+    tray,
+    updater: null
   };
   syncTray();
 };
@@ -128,6 +201,13 @@ export const setTrayStatus = (status: RecorderStatusSnapshot): void => {
   }
   trayState.status = status;
   syncTray();
+};
+
+export const setTrayUpdaterState = (updater: AutoUpdateSnapshot): void => {
+  if (!trayState) {
+    return;
+  }
+  trayState.updater = updater;
 };
 
 export const destroyTray = (): void => {

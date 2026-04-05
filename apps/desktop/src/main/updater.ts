@@ -68,6 +68,14 @@ export const getAutoUpdateSnapshot = (): AutoUpdateSnapshot => updaterState;
 
 export const isAutoUpdateInstalling = (): boolean => installingUpdate;
 
+export const checkForUpdates = (): void => {
+  void runUpdateCheck();
+};
+
+export const quitAndInstallUpdate = (): void => {
+  installDownloadedUpdate();
+};
+
 export const installDownloadedUpdateIfReady = (): void => {
   if (!updaterState.downloadedVersionReady || shouldDeferInstall?.()) {
     return;

@@ -28,15 +28,18 @@ import {
   getTrayBounds,
   initializeTray,
   setTrayLaunchAtLogin,
-  setTrayStatus
+  setTrayStatus,
+  setTrayUpdaterState
 } from "./tray";
 import { initializeMainLogger } from "./logging";
 import { createMainWindow, positionWindowForReveal } from "./window";
 import {
+  checkForUpdates,
   getAutoUpdateSnapshot,
   initializeAutoUpdates,
   installDownloadedUpdateIfReady,
   isAutoUpdateInstalling,
+  quitAndInstallUpdate,
   shutdownAutoUpdates
 } from "./updater";
 
@@ -350,6 +353,8 @@ const bootstrapDesktop = async (): Promise<void> => {
   if (!isE2E) {
     initializeTray({
       iconPath: icon,
+      onCheckForUpdates: checkForUpdates,
+      onInstallUpdate: quitAndInstallUpdate,
       onOpen: toggleMainWindow,
       onOpenDevTools: openRendererDevTools,
       onQuit: () => app.quit(),
@@ -390,7 +395,8 @@ const bootstrapDesktop = async (): Promise<void> => {
   if (!isE2E) {
     initializeAutoUpdates({
       deferInstallWhen: () => lastStatus.recording,
-      onSnapshot: () => {
+      onSnapshot: (snapshot) => {
+        setTrayUpdaterState(snapshot);
         void emitSnapshot(buildSnapshot(), { force: true });
       }
     });
