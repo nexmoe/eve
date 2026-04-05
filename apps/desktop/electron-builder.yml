@@ -63,6 +63,5 @@ npmRebuild: false
 electronLanguages:
   - en
 publish:
-  - provider: github
-    owner: nexmoe
-    repo: eve
+  provider: generic
+  url: https://github.com/nexmoe/eve/releases/latest/download
