@@ -2,6 +2,14 @@
 
 本文档记录本项目的重要变更。
 
+## 0.8.5 - 2026-04-05
+
+### 文档
+- README：项目更名为 Eve Recorder，更新功能说明（Silero VAD、仅语音录制、历史、主题等），补充 macOS `.dmg`/`.zip` 与 Windows NSIS 安装包说明，精简运行说明，并增加更新日志链接。
+
+### 构建
+- 桌面端：将 `electron-builder` 自动更新发布配置为 generic，指向 GitHub Releases 下载地址。
+
 ## 0.8.4 - 2026-04-05
 
 ### 新功能

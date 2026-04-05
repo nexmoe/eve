@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.5 - 2026-04-05
+
+### Documentation
+- README: rename project to Eve Recorder, refresh feature list (Silero VAD, VAD-only mode, history, themes), document macOS `.dmg`/`.zip` and Windows NSIS installers, simplify runtime notes, and link the changelog.
+
+### Build
+- Desktop: configure `electron-builder` auto-update publish as generic URL pointing at GitHub Releases downloads.
+
 ## 0.8.4 - 2026-04-05
 
 ### Features
