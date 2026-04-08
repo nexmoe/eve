@@ -65,6 +65,7 @@ let engine: DesktopEngineLike | null = null;
 let lastStatus: RecorderStatusSnapshot = DEFAULT_STATUS;
 let isQuitting = false;
 let isWindowPinned = false;
+let isRevealing = false;
 let quitAfterRecordingFinalize = false;
 let cachedDevices: DesktopSnapshot["devices"] = [];
 let cachedHistory: DesktopSnapshot["history"] = [];
@@ -185,12 +186,18 @@ const revealMainWindow = (): BrowserWindow => {
     // Activate the app first so macOS brings it to the foreground.
     // Without this, the window may show but not receive focus when
     // the dock icon is hidden.
+    isRevealing = true;
     app.show();
     windowRef.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     windowRef.show();
     windowRef.focus();
     windowRef.setVisibleOnAllWorkspaces(false);
     hideDockIcon();
+    // Defer clearing the flag so the blur event triggered by
+    // app.dock?.hide() is suppressed and the window stays visible.
+    setTimeout(() => {
+      isRevealing = false;
+    }, 200);
   } else {
     windowRef.setVisibleOnAllWorkspaces(false);
     windowRef.show();
@@ -346,7 +353,7 @@ const bootstrapDesktop = async (): Promise<void> => {
     mainWindow?.hide();
   });
   mainWindow.on("blur", () => {
-    if (!isE2E && !isQuitting && !isWindowPinned) {
+    if (!isE2E && !isQuitting && !isWindowPinned && !isRevealing) {
       mainWindow?.hide();
     }
   });
