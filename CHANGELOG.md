@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.6 - 2026-04-08
+
+### Fixes
+- macOS: keep the tray-revealed window visible by suppressing transient blur events during Dock hide.
+
 ## 0.8.5 - 2026-04-05
 
 ### Documentation
